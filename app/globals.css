@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+:root {
+  --font-display: "Space Grotesk", ui-sans-serif, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, sans-serif;
+}
+
+@theme inline {
+  --font-display: var(--font-display);
+  --font-sans: var(--font-sans);
+
+  --color-brand-forest: #1e4b3c;
+  --color-brand-forest-dark: #12332a;
+  --color-brand-forest-light: #2f6b56;
+  --color-brand-gold: #c9962e;
+  --color-brand-gold-light: #e4b860;
+  --color-brand-paper: #f1f3ee;
+  --color-brand-card: #ffffff;
+  --color-brand-ink: #16231d;
+  --color-brand-ink-soft: #4b5c54;
+  --color-brand-line: #dde3d9;
+  --color-brand-danger: #b8462f;
+  --color-brand-danger-soft: #f6e5e0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-brand-paper);
+  color: var(--color-brand-ink);
+  font-family: var(--font-sans);
+}
+
+::selection {
+  background: var(--color-brand-gold-light);
+  color: var(--color-brand-forest-dark);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.leaflet-container {
+  font-family: var(--font-sans);
+  z-index: 0;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white;
+  }
+}

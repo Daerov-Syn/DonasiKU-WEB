@@ -1,0 +1,43 @@
+import { Sprout } from "lucide-react";
+import RegisterForm from "@/components/RegisterForm";
+
+export default function RegisterPage() {
+  return (
+    <div className="mx-auto flex min-h-[calc(100vh-64px)] max-w-6xl items-center px-5 py-14">
+      <div className="grid w-full overflow-hidden rounded-3xl border border-brand-line bg-white shadow-sm md:grid-cols-2">
+        <div className="hidden flex-col justify-between bg-brand-forest p-10 text-white md:flex">
+          <div>
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15">
+              <Sprout size={20} />
+            </span>
+            <h1 className="mt-6 font-display text-3xl font-semibold leading-tight">
+              Dua menit, satu langkah nyata.
+            </h1>
+            <p className="mt-3 text-sm text-white/75">
+              Buat akun untuk mulai mendonasikan barang layak pakai atau dana,
+              dan pantau setiap langkah penyalurannya.
+            </p>
+          </div>
+          <p className="text-xs text-white/60">
+            Punya lembaga yang butuh bantuan?{" "}
+            <a href="/mitra/daftar" className="underline">
+              Daftar sebagai mitra
+            </a>
+          </p>
+        </div>
+
+        <div className="p-8 sm:p-10">
+          <h2 className="font-display text-2xl font-semibold text-brand-ink">
+            Buat akun donatur
+          </h2>
+          <p className="mt-1 text-sm text-brand-ink-soft">
+            Gratis, dan bisa langsung donasi setelah verifikasi email.
+          </p>
+          <div className="mt-6">
+            <RegisterForm />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
