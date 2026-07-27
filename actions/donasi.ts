@@ -5,7 +5,6 @@ import { getCurrentUser } from "@/lib/session";
 import { donationItemSchema, donationMoneySchema } from "@/lib/validators";
 import { saveUploadedFiles } from "@/lib/upload";
 import { computeMatches } from "@/lib/matching";
-import { generateCertificateNumber } from "@/lib/certificate";
 import {
   createDonationItem,
   setItemMatchedProgram,
@@ -17,6 +16,8 @@ import {
   createCertificate,
   getProgramById,
 } from "@/lib/repo";
+import { syncDonationItemToFirestore, syncDonationMoneyToFirestore, syncCertificateToFirestore, syncNotificationToFirestore } from "@/lib/firebase-sync";
+import { generateCertificateNumber } from "@/lib/certificate";
 
 export interface ActionState {
   error?: string;
@@ -53,6 +54,7 @@ export async function submitBarangAction(
   }
   const photoUrls = await saveUploadedFiles(files, "barang");
 
+  // Simpan ke SQLite (lokal)
   const item = createDonationItem({
     donorId: user.id,
     categoryId: parsed.data.categoryId,
@@ -64,6 +66,9 @@ export async function submitBarangAction(
     pickupLatitude: parsed.data.pickupLatitude,
     pickupLongitude: parsed.data.pickupLongitude,
   });
+
+  // 🔥 Simpan ke Firebase Firestore (sinkronisasi)
+  await syncDonationItemToFirestore(item);
 
   // Jalankan Smart Matching (PRD Bab 11) — rekomendasi awal, bukan final.
   const matches = computeMatches({
@@ -79,6 +84,16 @@ export async function submitBarangAction(
     userId: user.id,
     type: "status_barang",
     message: `Donasi barang "${item.title}" telah diterima dan sedang menunggu verifikasi admin.`,
+  });
+
+  // 🔥 Simpan notifikasi ke Firestore
+  await syncNotificationToFirestore({
+    id: `notif_${item.id}`,
+    userId: user.id,
+    type: "status_barang",
+    message: `Donasi barang "${item.title}" telah diterima dan sedang menunggu verifikasi admin.`,
+    isRead: false,
+    createdAt: new Date().toISOString(),
   });
 
   redirect(`/riwayat/barang/${item.id}`);
@@ -106,6 +121,7 @@ export async function submitUangAction(
     return { error: parsed.error.issues[0]?.message ?? "Data tidak valid" };
   }
 
+  // Simpan ke SQLite (lokal)
   const money = createDonationMoney({
     donorId: user.id,
     programId: parsed.data.programId ?? null,
@@ -113,6 +129,9 @@ export async function submitUangAction(
     method: parsed.data.method,
     isAnonymous: parsed.data.isAnonymous ?? false,
   });
+
+  // 🔥 Simpan ke Firebase Firestore
+  await syncDonationMoneyToFirestore(money);
 
   redirect(`/donasi/uang/${parsed.data.programId ?? "umum"}/bayar?id=${money.id}`);
 }
@@ -131,7 +150,10 @@ export async function confirmPaymentAction(moneyId: string): Promise<void> {
   }
 
   const certNo = generateCertificateNumber();
-  createCertificate({ certificateNo: certNo, donorId: user.id, donationMoneyId: money.id });
+  const cert = createCertificate({ certificateNo: certNo, donorId: user.id, donationMoneyId: money.id });
+
+  // 🔥 Simpan sertifikat ke Firestore
+  await syncCertificateToFirestore(cert);
 
   const program = money.programId ? getProgramById(money.programId) : null;
   createNotification({
@@ -140,6 +162,18 @@ export async function confirmPaymentAction(moneyId: string): Promise<void> {
     message: `Donasi uang sebesar Rp${money.amount.toLocaleString("id-ID")}${
       program ? ` untuk program "${program.title}"` : ""
     } berhasil dikonfirmasi. Sertifikat sudah tersedia.`,
+  });
+
+  // 🔥 Simpan notifikasi ke Firestore
+  await syncNotificationToFirestore({
+    id: `notif_${money.id}`,
+    userId: user.id,
+    type: "pembayaran",
+    message: `Donasi uang sebesar Rp${money.amount.toLocaleString("id-ID")}${
+      program ? ` untuk program "${program.title}"` : ""
+    } berhasil dikonfirmasi. Sertifikat sudah tersedia.`,
+    isRead: false,
+    createdAt: new Date().toISOString(),
   });
 
   redirect(`/riwayat/uang/${money.id}`);

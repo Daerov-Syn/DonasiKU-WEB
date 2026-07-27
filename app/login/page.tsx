@@ -1,4 +1,4 @@
-import { Sprout } from "lucide-react";
+import { HandHeart } from "lucide-react";
 import LoginForm from "@/components/LoginForm";
 
 export default async function LoginPage({
@@ -10,11 +10,11 @@ export default async function LoginPage({
 
   return (
     <div className="mx-auto flex min-h-[calc(100vh-64px)] max-w-6xl items-center px-5 py-14">
-      <div className="grid w-full overflow-hidden rounded-3xl border border-brand-line bg-white shadow-sm md:grid-cols-2">
-        <div className="hidden flex-col justify-between bg-brand-forest p-10 text-white md:flex">
+      <div className="grid w-full overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-xl md:grid-cols-2">
+        <div className="hidden flex-col justify-between bg-purple-600 p-10 text-white md:flex">
           <div>
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15">
-              <Sprout size={20} />
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-xs">
+              <HandHeart className="h-6 w-6 stroke-[2.2]" />
             </span>
             <h1 className="mt-6 font-display text-3xl font-semibold leading-tight">
               Selamat datang kembali di DonasiKu

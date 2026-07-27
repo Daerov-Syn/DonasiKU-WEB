@@ -9,9 +9,11 @@ import {
   SESSION_COOKIE,
   SESSION_MAX_AGE_SECONDS,
 } from "@/lib/auth";
-import { createUser, getUserByEmail, setEmailVerified } from "@/lib/repo";
+import { createUser, getUserByEmail, setEmailVerified, upsertUser } from "@/lib/repo";
 import { registerSchema, loginSchema } from "@/lib/validators";
 import { getSession } from "@/lib/session";
+import { syncUserToFirestore } from "@/lib/firebase-sync";
+import { getFirebaseUserByEmail } from "@/lib/firebase-repo";
 
 export interface ActionState {
   error?: string;
@@ -69,6 +71,9 @@ export async function registerAction(
     emailVerified: false,
   });
 
+  // 🔥 Simpan user baru ke Firebase Firestore
+  await syncUserToFirestore(user);
+
   await setSessionCookie({ userId: user.id, role: user.role, name: user.name });
   redirect("/verifikasi-email");
 }
@@ -93,14 +98,43 @@ export async function loginAction(
   }
   const { email, password } = parsed.data;
 
-  const user = getUserByEmail(email);
+  let user = getUserByEmail(email);
+
+  // Jika user belum ada di SQLite lokal, cari dari Firestore!
+  if (!user) {
+    try {
+      const fsUser = await getFirebaseUserByEmail(email);
+      if (fsUser) {
+        // Simpan / cache user Firestore ke SQLite
+        user = upsertUser(fsUser);
+      }
+    } catch (e) {
+      console.warn("Firestore lookup failed:", e);
+    }
+  }
+
   if (!user) {
     return { error: "Email atau password salah." };
   }
-  const valid = await verifyPassword(password, user.passwordHash);
+
+  let valid = false;
+  if (user.passwordHash) {
+    valid = await verifyPassword(password, user.passwordHash);
+    // Fallback: jika mobile menyimpan plain text password
+    if (!valid && user.passwordHash === password) {
+      valid = true;
+      // Perbarui ke bcrypt hash
+      user.passwordHash = await hashPassword(password);
+      upsertUser(user);
+    }
+  }
+
   if (!valid) {
     return { error: "Email atau password salah." };
   }
+
+  // 🔥 Sinkronkan data user ke Firestore saat login
+  await syncUserToFirestore(user);
 
   await setSessionCookie({ userId: user.id, role: user.role, name: user.name });
 

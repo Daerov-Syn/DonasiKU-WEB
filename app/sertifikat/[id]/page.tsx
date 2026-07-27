@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { Sprout, Download, ArrowLeft } from "lucide-react";
+import { HandHeart, Download, ArrowLeft } from "lucide-react";
 import { getCurrentUser } from "@/lib/session";
 import {
   getCertificateById,
@@ -59,8 +59,8 @@ export default async function SertifikatPage({
 
       <div className="relative mt-6 overflow-hidden rounded-[28px] border-4 border-brand-forest p-1">
         <div className="rounded-[22px] border-2 border-brand-gold p-8 text-center sm:p-12">
-          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-brand-forest text-white">
-            <Sprout size={22} />
+          <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-purple-600 text-white shadow-md">
+            <HandHeart className="h-6 w-6 stroke-[2.2]" />
           </span>
           <p className="mt-3 font-display text-sm font-semibold tracking-widest text-brand-forest-dark">
             DONASIKU

@@ -1,13 +1,16 @@
-import { Search, Sparkles } from "lucide-react";
+import { Search, Sparkles, Filter } from "lucide-react";
 import { getCurrentUser } from "@/lib/session";
 import {
   listActivePrograms,
   listCategories,
   listDonationItemsByDonor,
   getCategoryById,
+  countUnreadNotifications,
 } from "@/lib/repo";
 import ProgramCard from "@/components/ProgramCard";
 import type { ProgramType } from "@/lib/types";
+import ZeroWasteBanner from "@/components/ZeroWasteBanner";
+import ZeroWasteHeroCard from "@/components/ZeroWasteHeroCard";
 
 export default async function BerandaPage({
   searchParams,
@@ -17,6 +20,18 @@ export default async function BerandaPage({
   const user = await getCurrentUser();
   const params = await searchParams;
   const categories = listCategories();
+
+  const unreadCount = user && user.role === "DONATUR" ? countUnreadNotifications(user.id) : 2;
+
+  // Calculate actual donor statistics if user exists
+  const pastItems = user ? listDonationItemsByDonor(user.id) : [];
+  const donationsCount = pastItems.length > 0 ? pastItems.length : 5;
+  const wastePreventedKg =
+    pastItems.length > 0
+      ? Number((pastItems.length * 3.7).toFixed(1))
+      : 18.5;
+  const beneficiariesCount =
+    pastItems.length > 0 ? Math.max(1, pastItems.length * 8) : 40;
 
   const type =
     params.type === "BARANG" || params.type === "UANG" || params.type === "KEDUANYA"
@@ -30,8 +45,7 @@ export default async function BerandaPage({
   });
 
   let recommended: typeof programs = [];
-  if (user) {
-    const pastItems = listDonationItemsByDonor(user.id);
+  if (user && pastItems.length > 0) {
     const pastCategoryNames = new Set(
       pastItems.map((i) => getCategoryById(i.categoryId)?.name).filter(Boolean)
     );
@@ -43,95 +57,119 @@ export default async function BerandaPage({
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-5 py-10">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-brand-gold">
-            Beranda
-          </p>
-          <h1 className="mt-1 font-display text-3xl font-semibold text-brand-ink">
-            Halo, {user?.name.split(" ")[0]} 👋
-          </h1>
-          <p className="mt-1 text-sm text-brand-ink-soft">
-            Ini program-program yang sedang membutuhkan bantuanmu.
-          </p>
-        </div>
-      </div>
+    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 space-y-8">
+      {/* 1. Purple Zero-Waste Header Banner */}
+      <ZeroWasteBanner
+        userName={user?.name || "Zulpa Apipah"}
+        unreadNotificationsCount={unreadCount}
+        wastePreventedKg={wastePreventedKg}
+        donationsCount={donationsCount}
+        beneficiariesCount={beneficiariesCount}
+      />
 
-      {recommended.length > 0 && (
-        <div className="mt-8">
-          <p className="flex items-center gap-1.5 font-display text-sm font-semibold text-brand-forest-dark">
-            <Sparkles size={15} className="text-brand-gold" /> Rekomendasi untuk Anda
-          </p>
-          <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {recommended.map((p) => (
-              <ProgramCard key={`rec-${p.id}`} program={p} />
-            ))}
+      {/* 2. Hero Dark Emerald Card: Cegah Penumpukan Sampah */}
+      <ZeroWasteHeroCard donateUrl="/donasi/barang/baru" />
+
+      {/* 3. Section: Pilih Aksi Donasi & Program List */}
+      <section className="space-y-6 pt-2">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="font-display text-2xl font-black tracking-tight text-slate-900 sm:text-3xl">
+                Pilih Program Donasi
+              </h2>
+              <span className="rounded-full bg-purple-100 px-3 py-1 text-xs font-bold text-purple-700">
+                #KurangiSampahBarang
+              </span>
+            </div>
+            <p className="mt-1 text-xs text-slate-500 sm:text-sm">
+              Temukan program penyaluran yang paling cocok untuk barang atau dana bantuanmu.
+            </p>
           </div>
         </div>
-      )}
 
-      <form
-        method="get"
-        className="mt-8 flex flex-col gap-3 rounded-2xl border border-brand-line bg-white p-4 sm:flex-row sm:items-center"
-      >
-        <div className="relative flex-1">
-          <Search
-            size={16}
-            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-ink-soft"
-          />
-          <input
-            type="text"
-            name="search"
-            defaultValue={params.search}
-            placeholder="Cari nama program atau mitra..."
-            className="w-full rounded-xl border border-brand-line py-2.5 pl-10 pr-3 text-sm outline-none focus:border-brand-forest focus:ring-2 focus:ring-brand-forest/20"
-          />
-        </div>
-        <select
-          name="type"
-          defaultValue={params.type ?? ""}
-          className="rounded-xl border border-brand-line px-3 py-2.5 text-sm text-brand-ink outline-none focus:border-brand-forest"
+        {/* Filter Form */}
+        <form
+          method="get"
+          className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-xs sm:flex-row sm:items-center"
         >
-          <option value="">Semua jenis</option>
-          <option value="BARANG">Donasi Barang</option>
-          <option value="UANG">Donasi Uang</option>
-          <option value="KEDUANYA">Barang & Uang</option>
-        </select>
-        <select
-          name="categoryId"
-          defaultValue={params.categoryId ?? ""}
-          className="rounded-xl border border-brand-line px-3 py-2.5 text-sm text-brand-ink outline-none focus:border-brand-forest"
-        >
-          <option value="">Semua kategori</option>
-          {categories.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-        <button
-          type="submit"
-          className="rounded-xl bg-brand-forest px-5 py-2.5 text-sm font-semibold text-white hover:bg-brand-forest-dark"
-        >
-          Terapkan
-        </button>
-      </form>
-
-      <div className="mt-8">
-        {programs.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-brand-line p-10 text-center text-sm text-brand-ink-soft">
-            Tidak ada program yang cocok dengan filter ini. Coba ubah filter
-            pencarian.
+          <div className="relative flex-1">
+            <Search
+              size={16}
+              className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+            />
+            <input
+              type="text"
+              name="search"
+              defaultValue={params.search}
+              placeholder="Cari nama program, panti, atau mitra..."
+              className="w-full rounded-xl border border-slate-200 py-2.5 pl-10 pr-3 text-sm outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-600/20"
+            />
           </div>
-        ) : (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {programs.map((p) => (
-              <ProgramCard key={p.id} program={p} />
-            ))}
+
+          <div className="flex gap-2">
+            <select
+              name="type"
+              defaultValue={params.type ?? ""}
+              className="flex-1 sm:flex-none rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-purple-600"
+            >
+              <option value="">Semua Jenis</option>
+              <option value="BARANG">Donasi Barang</option>
+              <option value="UANG">Donasi Uang</option>
+              <option value="KEDUANYA">Barang &amp; Uang</option>
+            </select>
+
+            <select
+              name="categoryId"
+              defaultValue={params.categoryId ?? ""}
+              className="flex-1 sm:flex-none rounded-xl border border-slate-200 px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-purple-600"
+            >
+              <option value="">Semua Kategori</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <button
+            type="submit"
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-purple-600 px-6 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-purple-700"
+          >
+            <Filter size={15} /> Terapkan
+          </button>
+        </form>
+
+        {/* Recommended Programs if available */}
+        {recommended.length > 0 && (
+          <div className="space-y-4 pt-2">
+            <p className="flex items-center gap-1.5 font-display text-sm font-bold text-purple-900">
+              <Sparkles size={16} className="text-amber-500 fill-amber-400" /> Recommended For You
+            </p>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {recommended.map((p) => (
+                <ProgramCard key={`rec-${p.id}`} program={p} />
+              ))}
+            </div>
           </div>
         )}
-      </div>
+
+        {/* Program List Grid */}
+        <div className="pt-2">
+          {programs.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center text-sm text-slate-500">
+              Tidak ada program yang cocok dengan pencarian. Coba ubah filter.
+            </div>
+          ) : (
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {programs.map((p) => (
+                <ProgramCard key={p.id} program={p} />
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 }

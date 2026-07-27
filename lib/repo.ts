@@ -208,6 +208,44 @@ export function getUserById(id: string): User | null {
   return row ? toUser(row) : null;
 }
 
+export function upsertUser(user: User): User {
+  db.prepare(
+    `INSERT INTO users (id, name, email, password_hash, phone, address, latitude, longitude, avatar_url, role, email_verified, notify_email, notify_inapp, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(id) DO UPDATE SET
+       name = excluded.name,
+       email = excluded.email,
+       password_hash = excluded.password_hash,
+       phone = excluded.phone,
+       address = excluded.address,
+       latitude = excluded.latitude,
+       longitude = excluded.longitude,
+       avatar_url = excluded.avatar_url,
+       role = excluded.role,
+       email_verified = excluded.email_verified,
+       notify_email = excluded.notify_email,
+       notify_inapp = excluded.notify_inapp,
+       updated_at = datetime('now')`
+  ).run(
+    user.id,
+    user.name,
+    user.email.toLowerCase().trim(),
+    user.passwordHash || "NO_HASH",
+    user.phone ?? null,
+    user.address ?? null,
+    user.latitude ?? null,
+    user.longitude ?? null,
+    user.avatarUrl ?? null,
+    user.role || "DONATUR",
+    user.emailVerified ? 1 : 0,
+    user.notifyEmail ? 1 : 0,
+    user.notifyInapp ? 1 : 0,
+    user.createdAt || new Date().toISOString(),
+    user.updatedAt || new Date().toISOString()
+  );
+  return getUserById(user.id)!;
+}
+
 export function updateUserProfile(
   id: string,
   input: Partial<{
