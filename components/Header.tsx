@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bell, User, Menu, LogOut, ChevronDown, MapPin, ArrowRight, ShieldCheck, Building2 } from "lucide-react";
+import { Bell, Menu, LogOut, ChevronDown, MapPin, ArrowRight, ShieldCheck, Building2, Box } from "lucide-react";
 import { getCurrentUser } from "@/lib/session";
 import { getUnreadNotificationCount } from "@/lib/unified-repo";
 import { logoutAction } from "@/actions/auth";
@@ -9,7 +9,7 @@ export default async function Header() {
   const user = await getCurrentUser();
   const unread = user ? await getUnreadNotificationCount(user.id) : 0;
 
-  // Navigation Links: Bersih & Seragam untuk semua role setelah login
+  // Navigation Links: Bersih & Seragam untuk semua pengguna setelah login
   const navLinks = user
     ? [
         { href: "/beranda", label: "Beranda" },
@@ -70,16 +70,6 @@ export default async function Header() {
             </Link>
           ) : (
             <div className="flex items-center gap-2">
-              {/* Special Admin Web Button for Admin Role */}
-              {user.role === "ADMIN" && (
-                <Link
-                  href="/admin/verifikasi-barang"
-                  className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-purple-600 px-4 py-2 text-xs font-extrabold text-white shadow-md shadow-purple-600/30 transition-all hover:bg-purple-700 hover:scale-105 active:scale-95"
-                >
-                  <ShieldCheck size={15} /> Admin Web
-                </Link>
-              )}
-
               <Link
                 href="/donasi/barang/baru"
                 className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-purple-600 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-purple-600/20 transition-all hover:bg-purple-700"
@@ -121,10 +111,16 @@ export default async function Header() {
                         Admin Control Center
                       </div>
                       <Link
+                        href="/admin"
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-purple-50 hover:text-purple-700 font-medium"
+                      >
+                        <ShieldCheck size={14} className="text-purple-600" /> Dashboard Admin Web
+                      </Link>
+                      <Link
                         href="/admin/verifikasi-barang"
                         className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-purple-50 hover:text-purple-700 font-medium"
                       >
-                        <ShieldCheck size={14} className="text-purple-600" /> Verifikasi Barang
+                        <Box size={14} className="text-purple-600" /> Verifikasi Barang
                       </Link>
                       <Link
                         href="/admin/verifikasi-mitra"

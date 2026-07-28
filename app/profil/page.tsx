@@ -117,7 +117,7 @@ export default async function ProfilPage() {
             </div>
 
             <Link
-              href="/admin/verifikasi-barang"
+              href="/admin"
               className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-xs font-black text-purple-900 shadow-md shadow-black/10 transition-all hover:bg-purple-50 hover:scale-105 active:scale-95"
             >
               <ShieldCheck size={16} className="text-purple-600" /> Buka Dashboard Admin
