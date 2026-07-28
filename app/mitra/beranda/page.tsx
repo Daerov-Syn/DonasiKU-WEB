@@ -3,23 +3,97 @@ import { redirect } from "next/navigation";
 import { Plus, Clock, ArrowRight } from "lucide-react";
 import { getCurrentUser } from "@/lib/session";
 import {
-  getMitraProfileByUserId,
-  listProgramsByMitra,
-  listItemsMatchedToProgram,
-} from "@/lib/repo";
+  getFirebaseMitraProfileByUserId,
+} from "@/lib/firebase-repo";
+import {
+  getActivePrograms,
+} from "@/lib/unified-repo";
+import { FALLBACK_MITRAS } from "@/lib/hardcoded-data";
+import type { MitraProfile, Program } from "@/lib/types";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
+import { db as firestoreDb } from "@/lib/firebase";
 
 function formatRupiah(n: number): string {
   return `Rp${n.toLocaleString("id-ID")}`;
+}
+
+async function getMitraProfile(userId: string): Promise<MitraProfile | null> {
+  // 1. Firestore
+  try {
+    const fbMitra = await getFirebaseMitraProfileByUserId(userId);
+    if (fbMitra) return fbMitra;
+  } catch (e) {
+    console.warn("[mitra-beranda] Firestore mitra lookup failed:", e);
+  }
+
+  // 2. SQLite (dev only)
+  try {
+    const { getMitraProfileByUserId } = await import("@/lib/repo");
+    const localMitra = getMitraProfileByUserId(userId);
+    if (localMitra) return localMitra;
+  } catch {
+    // SQLite unavailable
+  }
+
+  // 3. Fallback hardcoded
+  return FALLBACK_MITRAS.find((m) => m.userId === userId) ?? null;
+}
+
+async function getProgramsByMitra(mitraId: string): Promise<Program[]> {
+  // 1. Firestore
+  try {
+    const q = query(
+      collection(firestoreDb, "programs"),
+      where("mitraId", "==", mitraId)
+    );
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      return snap.docs.map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          mitraId: data.mitraId || data.mitra_id || "",
+          title: data.title || data.judul || "",
+          description: data.description || data.deskripsi || "",
+          type: data.type || data.tipe || "KEDUANYA",
+          targetAmount: data.targetAmount ?? data.target_amount ?? null,
+          collectedAmount: data.collectedAmount ?? data.collected_amount ?? 0,
+          coverImageUrl: data.coverImageUrl || data.cover_image_url || null,
+          status: data.status || "aktif",
+          createdAt: data.createdAt || data.created_at || new Date().toISOString(),
+        } as Program;
+      });
+    }
+  } catch (e) {
+    console.warn("[mitra-beranda] Firestore programs lookup failed:", e);
+  }
+
+  // 2. SQLite (dev only)
+  try {
+    const { listProgramsByMitra } = await import("@/lib/repo");
+    return listProgramsByMitra(mitraId);
+  } catch {
+    // SQLite unavailable
+  }
+
+  // 3. Fallback: filter from unified active programs
+  const all = await getActivePrograms();
+  return all.filter((p) => p.mitraId === mitraId);
 }
 
 export default async function MitraBerandaPage() {
   const user = await getCurrentUser();
   if (!user || user.role !== "MITRA") redirect("/login");
 
-  const mitra = getMitraProfileByUserId(user.id);
+  const mitra = await getMitraProfile(user.id);
   if (!mitra) redirect("/login");
 
-  const programs = listProgramsByMitra(mitra.id);
+  const programs = await getProgramsByMitra(mitra.id);
 
   return (
     <div className="mx-auto max-w-4xl px-5 py-10">
@@ -62,10 +136,6 @@ export default async function MitraBerandaPage() {
           </p>
         ) : (
           programs.map((p) => {
-            const items = listItemsMatchedToProgram(p.id);
-            const pendingCount = items.filter(
-              (i) => i.status !== "SELESAI_DIDISTRIBUSIKAN"
-            ).length;
             const progress =
               p.targetAmount && p.targetAmount > 0
                 ? Math.min(100, Math.round((p.collectedAmount / p.targetAmount) * 100))
@@ -80,7 +150,7 @@ export default async function MitraBerandaPage() {
                   <div>
                     <p className="font-display font-semibold text-brand-ink">{p.title}</p>
                     <p className="mt-1 text-xs text-brand-ink-soft">
-                      {items.length} barang terhubung &middot; {pendingCount} perlu tindakan
+                      Program {p.type === "BARANG" ? "donasi barang" : p.type === "UANG" ? "donasi uang" : "barang & uang"}
                     </p>
                   </div>
                   <span className="flex items-center gap-1 text-xs font-semibold text-brand-forest-dark">

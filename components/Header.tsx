@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { Bell, User, Menu, LogOut, ChevronDown, MapPin, ArrowRight } from "lucide-react";
 import { getCurrentUser } from "@/lib/session";
-import { countUnreadNotifications } from "@/lib/repo";
+import { getUnreadNotificationCount } from "@/lib/unified-repo";
 import { logoutAction } from "@/actions/auth";
 import Logo from "@/components/Logo";
 
 export default async function Header() {
   const user = await getCurrentUser();
-  const unread = user && user.role === "DONATUR" ? countUnreadNotifications(user.id) : 0;
+  const unread = user && user.role === "DONATUR" ? await getUnreadNotificationCount(user.id) : 0;
 
   const navLinks =
     user?.role === "ADMIN"

@@ -10,7 +10,12 @@ import {
   Tooltip,
   CartesianGrid,
 } from "recharts";
-import type { WeeklyTrendPoint } from "@/lib/repo";
+
+interface WeeklyTrendPoint {
+  label: string;
+  itemsCount: number;
+  moneyAmount: number;
+}
 
 export default function TrendChart({ data }: { data: WeeklyTrendPoint[] }) {
   return (
