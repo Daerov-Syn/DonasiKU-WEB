@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bell, User, Menu, LogOut, ChevronDown, MapPin, ArrowRight } from "lucide-react";
+import { Bell, User, Menu, LogOut, ChevronDown, MapPin, ArrowRight, ShieldCheck, Building2 } from "lucide-react";
 import { getCurrentUser } from "@/lib/session";
 import { getUnreadNotificationCount } from "@/lib/unified-repo";
 import { logoutAction } from "@/actions/auth";
@@ -7,32 +7,33 @@ import Logo from "@/components/Logo";
 
 export default async function Header() {
   const user = await getCurrentUser();
-  const unread = user && user.role === "DONATUR" ? await getUnreadNotificationCount(user.id) : 0;
+  const unread = user ? await getUnreadNotificationCount(user.id) : 0;
 
-  const navLinks =
-    user?.role === "ADMIN"
-      ? [
-          { href: "/admin/verifikasi-barang", label: "Verifikasi Barang" },
-          { href: "/admin/verifikasi-mitra", label: "Verifikasi Mitra" },
-        ]
-      : user?.role === "MITRA"
-      ? [
-          { href: "/mitra/beranda", label: "Dashboard Mitra" },
-          { href: "/mitra/program/baru", label: "Buat Program" },
-        ]
-      : user
-      ? [
-          { href: "/beranda", label: "Beranda" },
-          { href: "/peta", label: "Peta Posko", isMap: true },
-          { href: "/dampak", label: "Dampak" },
-          { href: "/riwayat", label: "Riwayat" },
-        ]
-      : [
-          { href: "/#beranda", label: "Beranda" },
-          { href: "/#program", label: "Program Kampanye" },
-          { href: "/#cara-kerja", label: "Cara Kerja" },
-          { href: "/peta", label: "Peta Posko", isMap: true },
-        ];
+  const navLinks = user
+    ? [
+        { href: "/beranda", label: "Beranda" },
+        { href: "/peta", label: "Peta Posko", isMap: true },
+        { href: "/dampak", label: "Dampak" },
+        { href: "/riwayat", label: "Riwayat" },
+        ...(user.role === "ADMIN"
+          ? [
+              { href: "/admin/verifikasi-barang", label: "Verifikasi Barang" },
+              { href: "/admin/verifikasi-mitra", label: "Verifikasi Mitra" },
+            ]
+          : []),
+        ...(user.role === "MITRA"
+          ? [
+              { href: "/mitra/beranda", label: "Dashboard Mitra" },
+              { href: "/mitra/program/baru", label: "Buat Program" },
+            ]
+          : []),
+      ]
+    : [
+        { href: "/#beranda", label: "Beranda" },
+        { href: "/#program", label: "Program Kampanye" },
+        { href: "/#cara-kerja", label: "Cara Kerja" },
+        { href: "/peta", label: "Peta Posko", isMap: true },
+      ];
 
   return (
     <header className="no-print sticky top-0 z-40 border-b border-slate-100 bg-white/90 backdrop-blur-md">
@@ -46,7 +47,7 @@ export default async function Header() {
             <Link
               key={l.href}
               href={l.href}
-              className="flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-purple-50 hover:text-purple-700"
+              className="flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-purple-50 hover:text-purple-700"
             >
               {l.isMap && <MapPin size={14} className="text-purple-600" />}
               {l.label}
@@ -56,7 +57,7 @@ export default async function Header() {
 
         {/* RIGHT BUTTONS */}
         <div className="flex items-center gap-3">
-          {user?.role === "DONATUR" && (
+          {user && (
             <Link
               href="/notifikasi"
               className="relative hidden h-10 w-10 items-center justify-center rounded-full text-slate-600 transition-colors hover:bg-purple-50 hover:text-purple-700 sm:flex"
@@ -94,21 +95,58 @@ export default async function Header() {
                   <span className="max-w-[100px] truncate">{user.name.split(" ")[0]}</span>
                   <ChevronDown size={14} className="text-slate-400" />
                 </summary>
-                <div className="absolute right-0 z-50 mt-2 w-52 overflow-hidden rounded-2xl border border-slate-100 bg-white py-1.5 shadow-xl">
-                  {user.role === "DONATUR" && (
-                    <Link
-                      href="/profil"
-                      className="block px-4 py-2 text-sm text-slate-700 hover:bg-purple-50 hover:text-purple-700 font-medium"
-                    >
-                      Profil Saya
-                    </Link>
-                  )}
+                <div className="absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-2xl border border-slate-100 bg-white py-1.5 shadow-xl">
+                  <div className="px-4 py-2 border-b border-slate-100">
+                    <p className="text-xs font-bold text-slate-900 truncate">{user.name}</p>
+                    <p className="text-[11px] text-purple-600 font-semibold uppercase">{user.role}</p>
+                  </div>
+
+                  <Link
+                    href="/profil"
+                    className="block px-4 py-2 text-sm text-slate-700 hover:bg-purple-50 hover:text-purple-700 font-medium"
+                  >
+                    Profil Saya
+                  </Link>
+
                   <Link
                     href="/riwayat"
                     className="block px-4 py-2 text-sm text-slate-700 hover:bg-purple-50 hover:text-purple-700 font-medium"
                   >
                     Riwayat Donasi
                   </Link>
+
+                  {user.role === "ADMIN" && (
+                    <>
+                      <div className="my-1 border-t border-slate-100" />
+                      <Link
+                        href="/admin/verifikasi-barang"
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-purple-50 hover:text-purple-700 font-medium"
+                      >
+                        <ShieldCheck size={14} className="text-purple-600" /> Verifikasi Barang
+                      </Link>
+                      <Link
+                        href="/admin/verifikasi-mitra"
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-purple-50 hover:text-purple-700 font-medium"
+                      >
+                        <Building2 size={14} className="text-purple-600" /> Verifikasi Mitra
+                      </Link>
+                    </>
+                  )}
+
+                  {user.role === "MITRA" && (
+                    <>
+                      <div className="my-1 border-t border-slate-100" />
+                      <Link
+                        href="/mitra/beranda"
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-purple-50 hover:text-purple-700 font-medium"
+                      >
+                        <Building2 size={14} className="text-purple-600" /> Dashboard Mitra
+                      </Link>
+                    </>
+                  )}
+
+                  <div className="my-1 border-t border-slate-100" />
+
                   <form action={logoutAction}>
                     <button
                       type="submit"
