@@ -10,3 +10,13 @@ dist
 .DS_Store
 .vercel
 .tmp
+.agents
+
+# Database files (using Firebase Firestore instead)
+data/donasiku.db
+data/donasiku.db-shm
+data/donasiku.db-wal
+data/uploads/
+
+# Build artifacts
+tsconfig.tsbuildinfo
