@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Bell, Menu, LogOut, ChevronDown, MapPin, ArrowRight, ShieldCheck, Building2, Box } from "lucide-react";
+import { Bell, Menu, LogOut, ChevronDown, MapPin, ArrowRight, ShieldCheck, Building2, Box, Package, Wallet } from "lucide-react";
 import { getCurrentUser } from "@/lib/session";
 import { getUnreadNotificationCount } from "@/lib/unified-repo";
 import { logoutAction } from "@/actions/auth";
@@ -61,104 +61,132 @@ export default async function Header() {
             </Link>
           )}
 
-          {!user ? (
-            <Link
-              href="/donasi/barang/baru"
-              className="inline-flex items-center gap-1.5 rounded-full bg-purple-600 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-purple-600/20 transition-all hover:bg-purple-700 hover:shadow-lg hover:shadow-purple-600/30 active:scale-95"
-            >
-              Donasi Sekarang <ArrowRight size={15} />
-            </Link>
-          ) : (
-            <div className="flex items-center gap-2">
+          {/* DONASI DROPDOWN (Barang & Uang Shortcuts) */}
+          <details className="group relative">
+            <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-full bg-purple-600 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-purple-600/20 transition-all hover:bg-purple-700 active:scale-95 [&::-webkit-details-marker]:hidden">
+              <span>Donasi Sekarang</span>
+              <ChevronDown size={15} className="transition-transform group-open:rotate-180" />
+            </summary>
+            <div className="absolute right-0 z-50 mt-2 w-52 overflow-hidden rounded-2xl border border-slate-100 bg-white py-1.5 shadow-xl">
               <Link
                 href="/donasi/barang/baru"
-                className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-purple-600 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-purple-600/20 transition-all hover:bg-purple-700"
+                className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-bold text-slate-800 hover:bg-purple-50 hover:text-purple-700 transition-colors"
               >
-                Donasi Sekarang <ArrowRight size={15} />
-              </Link>
-              <details className="group relative">
-                <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-full border border-slate-200 py-1.5 pl-1.5 pr-3 text-sm font-semibold text-slate-800 hover:bg-slate-50 [&::-webkit-details-marker]:hidden">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-purple-100 text-purple-700 font-bold text-xs">
-                    {user.name.charAt(0).toUpperCase()}
-                  </span>
-                  <span className="max-w-[100px] truncate">{user.name.split(" ")[0]}</span>
-                  <ChevronDown size={14} className="text-slate-400" />
-                </summary>
-                <div className="absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-2xl border border-slate-100 bg-white py-1.5 shadow-xl">
-                  <div className="px-4 py-2 border-b border-slate-100">
-                    <p className="text-xs font-bold text-slate-900 truncate">{user.name}</p>
-                    <p className="text-[11px] text-purple-600 font-semibold uppercase">{user.role}</p>
-                  </div>
-
-                  <Link
-                    href="/profil"
-                    className="block px-4 py-2 text-sm text-slate-700 hover:bg-purple-50 hover:text-purple-700 font-medium"
-                  >
-                    Profil Saya
-                  </Link>
-
-                  <Link
-                    href="/riwayat"
-                    className="block px-4 py-2 text-sm text-slate-700 hover:bg-purple-50 hover:text-purple-700 font-medium"
-                  >
-                    Riwayat Donasi
-                  </Link>
-
-                  {user.role === "ADMIN" && (
-                    <>
-                      <div className="my-1 border-t border-slate-100" />
-                      <div className="px-4 py-1 text-[10px] font-bold uppercase tracking-wider text-purple-600">
-                        Admin Control Center
-                      </div>
-                      <Link
-                        href="/admin"
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-purple-50 hover:text-purple-700 font-medium"
-                      >
-                        <ShieldCheck size={14} className="text-purple-600" /> Dashboard Admin Web
-                      </Link>
-                      <Link
-                        href="/admin/verifikasi-barang"
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-purple-50 hover:text-purple-700 font-medium"
-                      >
-                        <Box size={14} className="text-purple-600" /> Verifikasi Barang
-                      </Link>
-                      <Link
-                        href="/admin/verifikasi-mitra"
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-purple-50 hover:text-purple-700 font-medium"
-                      >
-                        <Building2 size={14} className="text-purple-600" /> Verifikasi Mitra
-                      </Link>
-                    </>
-                  )}
-
-                  {user.role === "MITRA" && (
-                    <>
-                      <div className="my-1 border-t border-slate-100" />
-                      <div className="px-4 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                        Mitra Menu
-                      </div>
-                      <Link
-                        href="/mitra/beranda"
-                        className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-purple-50 hover:text-purple-700 font-medium"
-                      >
-                        <Building2 size={14} className="text-purple-600" /> Dashboard Mitra
-                      </Link>
-                    </>
-                  )}
-
-                  <div className="my-1 border-t border-slate-100" />
-
-                  <form action={logoutAction}>
-                    <button
-                      type="submit"
-                      className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-rose-600 hover:bg-rose-50 font-medium"
-                    >
-                      <LogOut size={14} /> Keluar
-                    </button>
-                  </form>
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+                  <Package size={14} />
+                </span>
+                <div>
+                  <p className="leading-tight">Donasi Barang</p>
+                  <p className="text-[10px] font-normal text-slate-500">Pakaian, sembako, dll</p>
                 </div>
-              </details>
+              </Link>
+
+              <Link
+                href="/donasi/uang/umum"
+                className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-bold text-slate-800 hover:bg-purple-50 hover:text-purple-700 transition-colors"
+              >
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-100 text-purple-700">
+                  <Wallet size={14} />
+                </span>
+                <div>
+                  <p className="leading-tight">Donasi Uang</p>
+                  <p className="text-[10px] font-normal text-slate-500">Sedekah dana bantuan</p>
+                </div>
+              </Link>
             </div>
+          </details>
+
+          {/* USER PROFILE DROPDOWN */}
+          {user && (
+            <details className="group relative">
+              <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-full border border-slate-200 py-1.5 pl-1.5 pr-3 text-sm font-semibold text-slate-800 hover:bg-slate-50 [&::-webkit-details-marker]:hidden">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-purple-100 text-purple-700 font-bold text-xs">
+                  {user.name.charAt(0).toUpperCase()}
+                </span>
+                <span className="max-w-[100px] truncate">{user.name.split(" ")[0]}</span>
+                <ChevronDown size={14} className="text-slate-400" />
+              </summary>
+              <div className="absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-2xl border border-slate-100 bg-white py-1.5 shadow-xl">
+                <div className="px-4 py-2 border-b border-slate-100">
+                  <p className="text-xs font-bold text-slate-900 truncate">{user.name}</p>
+                  <p className="text-[11px] text-purple-600 font-semibold uppercase">{user.role}</p>
+                </div>
+
+                <Link
+                  href="/profil"
+                  className="block px-4 py-2 text-sm text-slate-700 hover:bg-purple-50 hover:text-purple-700 font-medium"
+                >
+                  Profil Saya
+                </Link>
+
+                <Link
+                  href="/riwayat"
+                  className="block px-4 py-2 text-sm text-slate-700 hover:bg-purple-50 hover:text-purple-700 font-medium"
+                >
+                  Riwayat Donasi
+                </Link>
+
+                <Link
+                  href="/donasi/uang/umum"
+                  className="flex items-center gap-2 px-4 py-2 text-sm text-purple-700 hover:bg-purple-50 font-bold"
+                >
+                  <Wallet size={14} className="text-amber-500" /> Donasi Uang Sekarang
+                </Link>
+
+                {user.role === "ADMIN" && (
+                  <>
+                    <div className="my-1 border-t border-slate-100" />
+                    <div className="px-4 py-1 text-[10px] font-bold uppercase tracking-wider text-purple-600">
+                      Admin Control Center
+                    </div>
+                    <Link
+                      href="/admin"
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-purple-50 hover:text-purple-700 font-medium"
+                    >
+                      <ShieldCheck size={14} className="text-purple-600" /> Dashboard Admin Web
+                    </Link>
+                    <Link
+                      href="/admin/verifikasi-barang"
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-purple-50 hover:text-purple-700 font-medium"
+                    >
+                      <Box size={14} className="text-purple-600" /> Verifikasi Barang
+                    </Link>
+                    <Link
+                      href="/admin/verifikasi-mitra"
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-purple-50 hover:text-purple-700 font-medium"
+                    >
+                      <Building2 size={14} className="text-purple-600" /> Verifikasi Mitra
+                    </Link>
+                  </>
+                )}
+
+                {user.role === "MITRA" && (
+                  <>
+                    <div className="my-1 border-t border-slate-100" />
+                    <div className="px-4 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                      Mitra Menu
+                    </div>
+                    <Link
+                      href="/mitra/beranda"
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-purple-50 hover:text-purple-700 font-medium"
+                    >
+                      <Building2 size={14} className="text-purple-600" /> Dashboard Mitra
+                    </Link>
+                  </>
+                )}
+
+                <div className="my-1 border-t border-slate-100" />
+
+                <form action={logoutAction}>
+                  <button
+                    type="submit"
+                    className="flex w-full items-center gap-2 px-4 py-2 text-left text-sm text-rose-600 hover:bg-rose-50 font-medium"
+                  >
+                    <LogOut size={14} /> Keluar
+                  </button>
+                </form>
+              </div>
+            </details>
           )}
 
           {/* MOBILE MENU */}
