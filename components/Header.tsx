@@ -9,24 +9,13 @@ export default async function Header() {
   const user = await getCurrentUser();
   const unread = user ? await getUnreadNotificationCount(user.id) : 0;
 
+  // Navigation Links: Bersih & Seragam untuk semua role setelah login
   const navLinks = user
     ? [
         { href: "/beranda", label: "Beranda" },
         { href: "/peta", label: "Peta Posko", isMap: true },
         { href: "/dampak", label: "Dampak" },
         { href: "/riwayat", label: "Riwayat" },
-        ...(user.role === "ADMIN"
-          ? [
-              { href: "/admin/verifikasi-barang", label: "Verifikasi Barang" },
-              { href: "/admin/verifikasi-mitra", label: "Verifikasi Mitra" },
-            ]
-          : []),
-        ...(user.role === "MITRA"
-          ? [
-              { href: "/mitra/beranda", label: "Dashboard Mitra" },
-              { href: "/mitra/program/baru", label: "Buat Program" },
-            ]
-          : []),
       ]
     : [
         { href: "/#beranda", label: "Beranda" },
@@ -47,7 +36,7 @@ export default async function Header() {
             <Link
               key={l.href}
               href={l.href}
-              className="flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-purple-50 hover:text-purple-700"
+              className="flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-purple-50 hover:text-purple-700"
             >
               {l.isMap && <MapPin size={14} className="text-purple-600" />}
               {l.label}
@@ -118,6 +107,9 @@ export default async function Header() {
                   {user.role === "ADMIN" && (
                     <>
                       <div className="my-1 border-t border-slate-100" />
+                      <div className="px-4 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        Admin Menu
+                      </div>
                       <Link
                         href="/admin/verifikasi-barang"
                         className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-purple-50 hover:text-purple-700 font-medium"
@@ -136,6 +128,9 @@ export default async function Header() {
                   {user.role === "MITRA" && (
                     <>
                       <div className="my-1 border-t border-slate-100" />
+                      <div className="px-4 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        Mitra Menu
+                      </div>
                       <Link
                         href="/mitra/beranda"
                         className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-purple-50 hover:text-purple-700 font-medium"

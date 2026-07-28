@@ -365,6 +365,29 @@ export async function getUnreadNotificationCount(
 }
 
 // ================================================================
+// PERSONAL IMPACT
+// ================================================================
+export async function getPersonalImpactUnified(userId: string): Promise<{
+  totalItemsDonated: number;
+  totalItemsDistributed: number;
+  totalMoneyDonated: number;
+}> {
+  try {
+    const items = await listFirebaseDonationItemsByDonor(userId);
+    const money = await listFirebaseDonationMoneyByDonor(userId);
+    const totalItemsDonated = items.length;
+    const totalItemsDistributed = items.filter((i) => i.status === "SELESAI_DIDISTRIBUSIKAN").length;
+    const totalMoneyDonated = money
+      .filter((m) => m.paymentStatus === "BERHASIL")
+      .reduce((sum, m) => sum + m.amount, 0);
+    return { totalItemsDonated, totalItemsDistributed, totalMoneyDonated };
+  } catch (e) {
+    console.warn("[unified-repo] getPersonalImpactUnified error:", e);
+  }
+  return { totalItemsDonated: 0, totalItemsDistributed: 0, totalMoneyDonated: 0 };
+}
+
+// ================================================================
 // CATEGORY BY ID (for riwayat enrichment)
 // ================================================================
 export async function getCategoryByIdUnified(
