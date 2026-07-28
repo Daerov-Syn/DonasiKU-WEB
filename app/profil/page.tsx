@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Package, Wallet, Gift, ShieldCheck, Building2, Plus, ArrowRight, CheckCircle2 } from "lucide-react";
+import { Package, Wallet, Gift, ShieldCheck, Building2, Plus, ArrowRight, Box } from "lucide-react";
 import { getCurrentUser } from "@/lib/session";
 import { getPersonalImpactUnified } from "@/lib/unified-repo";
 import { updateNotifPrefsAction } from "@/actions/profil";
@@ -11,20 +11,20 @@ import DeleteAccountForm from "@/components/DeleteAccountForm";
 function getRoleBadge(role: string) {
   if (role === "ADMIN") {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-100 px-3 py-1 text-xs font-bold text-purple-700">
-        <ShieldCheck size={14} /> Administrator System
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-100 px-3.5 py-1 text-xs font-extrabold text-purple-700 shadow-xs border border-purple-200">
+        <ShieldCheck size={14} className="text-purple-600" /> Admin Control
       </span>
     );
   }
   if (role === "MITRA") {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">
-        <Building2 size={14} /> Mitra Lembaga / Posko
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3.5 py-1 text-xs font-extrabold text-emerald-700 shadow-xs border border-emerald-200">
+        <Building2 size={14} className="text-emerald-600" /> Mitra Lembaga / Posko
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3.5 py-1 text-xs font-bold text-slate-700 border border-slate-200">
       Donatur Peduli
     </span>
   );
@@ -89,54 +89,86 @@ export default async function ProfilPage() {
       )}
 
       {/* ================================================================ */}
-      {/* 🔴 PANEL KHUSUS ADMIN (Verifikasi Barang & Verifikasi Mitra)    */}
+      {/* 🔴 PANEL DASHBOARD ADMIN CONTROL (Aesthetic matching screenshot) */}
       {/* ================================================================ */}
       {user.role === "ADMIN" && (
-        <div className="rounded-3xl border border-purple-200 bg-purple-50/50 p-6 sm:p-8 space-y-4 shadow-sm">
-          <div className="flex items-center gap-2">
-            <ShieldCheck size={22} className="text-purple-600" />
-            <h2 className="font-display text-xl font-extrabold text-slate-900">
-              Panel Kelola Administrator
-            </h2>
-          </div>
-          <p className="text-xs text-slate-600 sm:text-sm leading-relaxed">
-            Kelola verifikasi kelayakan barang donasi masuk serta pengajuan verifikasi dokumen lembaga / posko mitra baru.
-          </p>
+        <div className="rounded-3xl border border-purple-200/80 bg-gradient-to-br from-purple-700 via-purple-600 to-purple-900 p-6 sm:p-8 text-white shadow-xl shadow-purple-900/20 space-y-6 relative overflow-hidden">
+          <div className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-white/10 blur-2xl" />
 
-          <div className="grid gap-4 sm:grid-cols-2 pt-2">
+          {/* Top Banner Header */}
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-purple-400/30 pb-4">
+            <div className="flex items-center gap-3">
+              <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-md text-white shadow-inner">
+                <ShieldCheck size={26} />
+              </span>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="font-display text-xl font-black text-white">
+                    DonasiKu Web Admin Control
+                  </h2>
+                  <span className="rounded-full bg-white/20 backdrop-blur-md px-2.5 py-0.5 text-[10px] font-extrabold tracking-wider uppercase text-purple-100">
+                    Admin Control
+                  </span>
+                </div>
+                <p className="text-xs text-purple-100/90 mt-0.5">
+                  Pusat kendali verifikasi barang, verifikasi mitra posko &amp; monitoring donasi
+                </p>
+              </div>
+            </div>
+
+            <Link
+              href="/admin/verifikasi-barang"
+              className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-3 text-xs font-black text-purple-900 shadow-md shadow-black/10 transition-all hover:bg-purple-50 hover:scale-105 active:scale-95"
+            >
+              <ShieldCheck size={16} className="text-purple-600" /> Buka Dashboard Admin
+            </Link>
+          </div>
+
+          {/* Admin Quick Action Cards */}
+          <div className="grid gap-4 sm:grid-cols-2 pt-1">
             {/* Card 1: Verifikasi Barang */}
             <Link
               href="/admin/verifikasi-barang"
-              className="group flex items-center justify-between rounded-2xl border border-purple-200 bg-white p-5 shadow-xs transition-all hover:-translate-y-0.5 hover:border-purple-600 hover:shadow-md"
+              className="group flex items-center justify-between rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 p-5 text-white transition-all hover:bg-white/20 hover:scale-[1.02]"
             >
               <div className="space-y-1">
-                <p className="font-display font-extrabold text-slate-900 group-hover:text-purple-700 transition-colors">
-                  Verifikasi Barang
-                </p>
-                <p className="text-xs text-slate-500">
-                  Tinjau foto &amp; kelayakan barang donasi
+                <div className="flex items-center gap-2">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-purple-500/40 text-purple-100">
+                    <Box size={16} />
+                  </span>
+                  <p className="font-display font-extrabold text-sm text-white group-hover:text-purple-200 transition-colors">
+                    Donasi Barang (Logistik)
+                  </p>
+                </div>
+                <p className="text-xs text-purple-100/80 pl-1">
+                  Verifikasi foto &amp; kecocokan barang donasi masuk
                 </p>
               </div>
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-purple-100 text-purple-700 group-hover:bg-purple-600 group-hover:text-white transition-all">
-                <ArrowRight size={16} />
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/20 text-white group-hover:bg-white group-hover:text-purple-900 transition-all">
+                <ArrowRight size={15} />
               </span>
             </Link>
 
             {/* Card 2: Verifikasi Mitra */}
             <Link
               href="/admin/verifikasi-mitra"
-              className="group flex items-center justify-between rounded-2xl border border-purple-200 bg-white p-5 shadow-xs transition-all hover:-translate-y-0.5 hover:border-purple-600 hover:shadow-md"
+              className="group flex items-center justify-between rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 p-5 text-white transition-all hover:bg-white/20 hover:scale-[1.02]"
             >
               <div className="space-y-1">
-                <p className="font-display font-extrabold text-slate-900 group-hover:text-purple-700 transition-colors">
-                  Verifikasi Mitra
-                </p>
-                <p className="text-xs text-slate-500">
-                  Verifikasi panti asuhan &amp; posko baru
+                <div className="flex items-center gap-2">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500/40 text-emerald-100">
+                    <Building2 size={16} />
+                  </span>
+                  <p className="font-display font-extrabold text-sm text-white group-hover:text-purple-200 transition-colors">
+                    Verifikasi Mitra &amp; Posko
+                  </p>
+                </div>
+                <p className="text-xs text-purple-100/80 pl-1">
+                  Persetujuan pendaftaran lembaga &amp; panti baru
                 </p>
               </div>
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-purple-100 text-purple-700 group-hover:bg-purple-600 group-hover:text-white transition-all">
-                <Building2 size={16} />
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/20 text-white group-hover:bg-white group-hover:text-purple-900 transition-all">
+                <ArrowRight size={15} />
               </span>
             </Link>
           </div>

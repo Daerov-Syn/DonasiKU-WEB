@@ -70,6 +70,16 @@ export default async function Header() {
             </Link>
           ) : (
             <div className="flex items-center gap-2">
+              {/* Special Admin Web Button for Admin Role */}
+              {user.role === "ADMIN" && (
+                <Link
+                  href="/admin/verifikasi-barang"
+                  className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-purple-600 px-4 py-2 text-xs font-extrabold text-white shadow-md shadow-purple-600/30 transition-all hover:bg-purple-700 hover:scale-105 active:scale-95"
+                >
+                  <ShieldCheck size={15} /> Admin Web
+                </Link>
+              )}
+
               <Link
                 href="/donasi/barang/baru"
                 className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-purple-600 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-purple-600/20 transition-all hover:bg-purple-700"
@@ -107,8 +117,8 @@ export default async function Header() {
                   {user.role === "ADMIN" && (
                     <>
                       <div className="my-1 border-t border-slate-100" />
-                      <div className="px-4 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                        Admin Menu
+                      <div className="px-4 py-1 text-[10px] font-bold uppercase tracking-wider text-purple-600">
+                        Admin Control Center
                       </div>
                       <Link
                         href="/admin/verifikasi-barang"
