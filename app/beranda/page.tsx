@@ -1,12 +1,12 @@
 import { Search, Sparkles, Filter } from "lucide-react";
 import { getCurrentUser } from "@/lib/session";
 import {
-  listActivePrograms,
-  listCategories,
-  listDonationItemsByDonor,
-  getCategoryById,
-  countUnreadNotifications,
-} from "@/lib/repo";
+  getActivePrograms,
+  getCategories,
+  getDonationItemsByDonorUnified,
+  getUnreadNotificationCount,
+  getCategoryByIdUnified,
+} from "@/lib/unified-repo";
 import ProgramCard from "@/components/ProgramCard";
 import type { ProgramType } from "@/lib/types";
 import ZeroWasteBanner from "@/components/ZeroWasteBanner";
@@ -19,12 +19,12 @@ export default async function BerandaPage({
 }) {
   const user = await getCurrentUser();
   const params = await searchParams;
-  const categories = listCategories();
+  const categories = await getCategories();
 
-  const unreadCount = user && user.role === "DONATUR" ? countUnreadNotifications(user.id) : 2;
+  const unreadCount = user && user.role === "DONATUR" ? await getUnreadNotificationCount(user.id) : 2;
 
   // Calculate actual donor statistics if user exists
-  const pastItems = user ? listDonationItemsByDonor(user.id) : [];
+  const pastItems = user ? await getDonationItemsByDonorUnified(user.id) : [];
   const donationsCount = pastItems.length > 0 ? pastItems.length : 5;
   const wastePreventedKg =
     pastItems.length > 0
@@ -38,7 +38,7 @@ export default async function BerandaPage({
       ? (params.type as ProgramType)
       : undefined;
 
-  const programs = listActivePrograms({
+  const programs = await getActivePrograms({
     type,
     categoryId: params.categoryId,
     search: params.search,
@@ -46,9 +46,11 @@ export default async function BerandaPage({
 
   let recommended: typeof programs = [];
   if (user && pastItems.length > 0) {
-    const pastCategoryNames = new Set(
-      pastItems.map((i) => getCategoryById(i.categoryId)?.name).filter(Boolean)
-    );
+    const pastCategoryNames = new Set<string>();
+    for (const item of pastItems) {
+      const cat = await getCategoryByIdUnified(item.categoryId);
+      if (cat?.name) pastCategoryNames.add(cat.name);
+    }
     if (pastCategoryNames.size > 0) {
       recommended = programs
         .filter((p) => p.neededCategoryNames.some((n) => pastCategoryNames.has(n)))

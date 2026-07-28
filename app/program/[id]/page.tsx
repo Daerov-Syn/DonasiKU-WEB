@@ -1,10 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { MapPin, Package, Wallet, ArrowLeft } from "lucide-react";
-import {
-  getProgramWithMitra,
-  listProgramNeededCategories,
-} from "@/lib/repo";
+import { getProgramByIdUnified } from "@/lib/unified-repo";
 
 function formatRupiah(n: number): string {
   return `Rp${n.toLocaleString("id-ID")}`;
@@ -16,10 +13,9 @@ export default async function ProgramDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const program = getProgramWithMitra(id);
+  const program = await getProgramByIdUnified(id);
   if (!program) notFound();
 
-  const needs = listProgramNeededCategories(program.id);
   const progress =
     program.targetAmount && program.targetAmount > 0
       ? Math.min(100, Math.round((program.collectedAmount / program.targetAmount) * 100))
@@ -58,19 +54,6 @@ export default async function ProgramDetailPage({
           </p>
         </div>
       </div>
-
-      {needs.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {needs.map((n) => (
-            <span
-              key={n.id}
-              className="rounded-full bg-brand-paper px-3 py-1.5 text-xs font-medium text-brand-ink-soft"
-            >
-              Butuh: {n.categoryName}
-            </span>
-          ))}
-        </div>
-      )}
 
       {progress !== null && (
         <div className="mt-6 rounded-2xl border border-brand-line bg-white p-5">

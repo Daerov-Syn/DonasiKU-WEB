@@ -1,6 +1,14 @@
 import Link from "next/link";
 import { MapPin, Package, Wallet, ArrowRight } from "lucide-react";
-import type { ProgramCardData } from "@/lib/repo";
+import type { Program } from "@/lib/types";
+
+// Compatible with both repo.ProgramCardData and unified-repo.UnifiedProgramCardData
+interface ProgramCardData extends Program {
+  mitraName: string;
+  mitraOrgType: string;
+  mitraAddress: string;
+  neededCategoryNames: string[];
+}
 
 function formatRupiah(n: number): string {
   return `Rp${n.toLocaleString("id-ID")}`;

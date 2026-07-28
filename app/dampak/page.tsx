@@ -1,13 +1,17 @@
 import Link from "next/link";
 import { Recycle, Leaf, TrendingUp, ArrowRight } from "lucide-react";
-import { getAggregateStats, getWeeklyTrend, listPublishedStories } from "@/lib/repo";
+import {
+  getAggregateStatsUnified,
+  getWeeklyTrendUnified,
+  getPublishedStories,
+} from "@/lib/unified-repo";
 import TrendChart from "@/components/TrendChart";
 import ShareButton from "@/components/ShareButton";
 
-export default function DampakPage() {
-  const stats = getAggregateStats();
-  const trend = getWeeklyTrend(8);
-  const stories = listPublishedStories();
+export default async function DampakPage() {
+  const stats = await getAggregateStatsUnified();
+  const trend = await getWeeklyTrendUnified();
+  const stories = await getPublishedStories();
 
   return (
     <div className="mx-auto max-w-5xl px-5 py-10">

@@ -3,11 +3,11 @@ import { redirect } from "next/navigation";
 import { Package, Wallet, ChevronRight } from "lucide-react";
 import { getCurrentUser } from "@/lib/session";
 import {
-  listDonationItemsByDonor,
-  listDonationMoneyByDonor,
-  getCategoryById,
-  getProgramById,
-} from "@/lib/repo";
+  getDonationItemsByDonorUnified,
+  getDonationMoneyByDonorUnified,
+  getCategoryByIdUnified,
+  getProgramByIdSimple,
+} from "@/lib/unified-repo";
 import { ItemStatusBadge, PaymentStatusBadge } from "@/components/StatusBadge";
 
 function formatDate(iso: string): string {
@@ -25,12 +25,29 @@ export default async function RiwayatPage({
   const { tab } = await searchParams;
   const activeTab = tab === "uang" ? "uang" : "barang";
 
-  const items = listDonationItemsByDonor(user.id);
-  const moneys = listDonationMoneyByDonor(user.id);
+  const items = await getDonationItemsByDonorUnified(user.id);
+  const moneys = await getDonationMoneyByDonorUnified(user.id);
 
   const totalMoney = moneys
     .filter((m) => m.paymentStatus === "BERHASIL")
     .reduce((sum, m) => sum + m.amount, 0);
+
+  // Pre-fetch category names and program titles for display
+  const categoryNames = new Map<string, string>();
+  for (const item of items) {
+    if (!categoryNames.has(item.categoryId)) {
+      const cat = await getCategoryByIdUnified(item.categoryId);
+      categoryNames.set(item.categoryId, cat?.name ?? "Lainnya");
+    }
+  }
+
+  const programTitles = new Map<string, string>();
+  for (const money of moneys) {
+    if (money.programId && !programTitles.has(money.programId)) {
+      const prog = await getProgramByIdSimple(money.programId);
+      programTitles.set(money.programId, prog?.title ?? "Donasi umum");
+    }
+  }
 
   return (
     <div className="mx-auto max-w-4xl px-5 py-10">
@@ -85,7 +102,7 @@ export default async function RiwayatPage({
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium text-brand-ink">{item.title}</p>
                   <p className="text-xs text-brand-ink-soft">
-                    {getCategoryById(item.categoryId)?.name} &middot; {formatDate(item.createdAt)}
+                    {categoryNames.get(item.categoryId) ?? "Lainnya"} &middot; {formatDate(item.createdAt)}
                   </p>
                 </div>
                 <ItemStatusBadge status={item.status} />
@@ -99,7 +116,9 @@ export default async function RiwayatPage({
             <EmptyState text="Anda belum melakukan donasi uang." href="/donasi/uang/umum" cta="Donasi uang sekarang" />
           ) : (
             moneys.map((money) => {
-              const program = money.programId ? getProgramById(money.programId) : null;
+              const programTitle = money.programId
+                ? (programTitles.get(money.programId) ?? "Donasi umum")
+                : "Donasi umum";
               return (
                 <Link
                   key={money.id}
@@ -114,7 +133,7 @@ export default async function RiwayatPage({
                       Rp{money.amount.toLocaleString("id-ID")}
                     </p>
                     <p className="truncate text-xs text-brand-ink-soft">
-                      {program ? program.title : "Donasi umum"} &middot; {formatDate(money.createdAt)}
+                      {programTitle} &middot; {formatDate(money.createdAt)}
                     </p>
                   </div>
                   <PaymentStatusBadge status={money.paymentStatus} />
