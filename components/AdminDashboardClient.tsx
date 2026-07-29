@@ -27,27 +27,39 @@ import {
 import type { UnifiedProgramCardData } from "@/lib/unified-repo";
 import type { FallbackAggregateStats } from "@/lib/hardcoded-data";
 
+import type { DonationItem } from "@/lib/types";
+
 interface AdminUser {
   id: string;
   name: string;
   email: string;
 }
 
+export interface AdminDonationItem extends DonationItem {
+  donorName: string;
+  categoryName: string;
+  mitraName: string | null;
+}
+
 export default function AdminDashboardClient({
   user,
   stats,
   programs,
+  donationItems = [],
 }: {
   user: AdminUser;
   stats: FallbackAggregateStats;
   programs: UnifiedProgramCardData[];
   stories: unknown[];
+  donationItems?: AdminDonationItem[];
 }) {
   const [activeTab, setActiveTab] = useState<
     "beranda" | "program" | "verifikasi" | "donasi-dana" | "donasi-barang" | "statistik" | "donatur"
   >("beranda");
 
   const [selectedWilayah, setSelectedWilayah] = useState("Surabaya");
+
+  const pendingCount = donationItems.filter((i) => i.status === "MENUNGGU_VERIFIKASI").length;
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans flex text-slate-800">
@@ -158,8 +170,8 @@ export default function AdminDashboardClient({
               <div className="flex items-center gap-3">
                 <Box size={18} /> Donasi Barang
               </div>
-              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500 text-[10px] font-black text-white">
-                3
+              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-purple-600 text-[10px] font-black text-white">
+                {donationItems.length}
               </span>
             </button>
 
@@ -617,22 +629,138 @@ export default function AdminDashboardClient({
           {/* TAB 5: DONASI BARANG */}
           {activeTab === "donasi-barang" && (
             <div className="space-y-6">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <h2 className="font-display text-2xl font-black text-slate-900">
                     Logistik Donasi Barang
                   </h2>
                   <p className="text-xs text-slate-500 mt-1">
-                    Verifikasi foto &amp; kelayakan barang donasi yang masuk dari masyarakat
+                    Daftar seluruh barang donasi yang masuk dari masyarakat dan status verifikasi logistiknya
                   </p>
                 </div>
                 <Link
                   href="/admin/verifikasi-barang"
-                  className="inline-flex items-center gap-1.5 rounded-2xl bg-purple-600 px-5 py-2.5 text-xs font-extrabold text-white shadow-md shadow-purple-600/20 hover:bg-purple-700"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-purple-600 px-5 py-2.5 text-xs font-extrabold text-white shadow-md shadow-purple-600/20 hover:bg-purple-700 transition-colors"
                 >
-                  <Box size={15} /> Buka Halaman Verifikasi Barang
+                  <Box size={16} /> Kelola &amp; Verifikasi Barang ({pendingCount} Baru)
                 </Link>
               </div>
+
+              {/* Summary metrics bar */}
+              <div className="grid gap-4 sm:grid-cols-4">
+                <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xs">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Total Barang Masuk</p>
+                  <p className="font-display text-2xl font-black text-purple-600 mt-1">{donationItems.length}</p>
+                </div>
+                <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xs">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Menunggu Verifikasi</p>
+                  <p className="font-display text-2xl font-black text-amber-500 mt-1">{pendingCount}</p>
+                </div>
+                <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xs">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Dalam Penyaluran</p>
+                  <p className="font-display text-2xl font-black text-blue-600 mt-1">
+                    {donationItems.filter((i) => i.status === "MENUNGGU_PENJEMPUTAN" || i.status === "DALAM_PENGIRIMAN").length}
+                  </p>
+                </div>
+                <div className="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xs">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase">Selesai Tersalurkan</p>
+                  <p className="font-display text-2xl font-black text-emerald-600 mt-1">
+                    {donationItems.filter((i) => i.status === "DITERIMA_MITRA" || i.status === "SELESAI_DIDISTRIBUSIKAN").length}
+                  </p>
+                </div>
+              </div>
+
+              {/* Table / List of User Donation Items */}
+              {donationItems.length === 0 ? (
+                <div className="rounded-3xl border border-slate-200/80 bg-white p-10 text-center space-y-3 shadow-xs">
+                  <Box size={40} className="mx-auto text-slate-300" />
+                  <h3 className="font-display font-extrabold text-base text-slate-800">
+                    Belum ada donasi barang yang masuk
+                  </h3>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                    Donasi barang yang disubmit oleh masyarakat melalui alur donasi akan tampil secara otomatis di halaman ini.
+                  </p>
+                </div>
+              ) : (
+                <div className="rounded-3xl border border-slate-200/80 bg-white overflow-hidden shadow-xs">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs text-slate-600">
+                      <thead className="bg-slate-50 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-200/80">
+                        <tr>
+                          <th className="px-5 py-3.5">Resi / ID</th>
+                          <th className="px-5 py-3.5">Barang &amp; Kategori</th>
+                          <th className="px-5 py-3.5">Donatur / Pengirim</th>
+                          <th className="px-5 py-3.5">Metode &amp; Alamat</th>
+                          <th className="px-5 py-3.5">Mitra Tujuan</th>
+                          <th className="px-5 py-3.5">Status</th>
+                          <th className="px-5 py-3.5 text-right">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 font-medium">
+                        {donationItems.map((item) => (
+                          <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
+                            <td className="px-5 py-4 font-mono text-[11px] font-extrabold text-purple-700">
+                              {item.trackingCode || `DON-${item.id.slice(0, 8)}`}
+                            </td>
+                            <td className="px-5 py-4">
+                              <p className="font-bold text-slate-900 text-sm">{item.title}</p>
+                              <div className="flex flex-wrap items-center gap-2 mt-0.5 text-[11px] text-slate-500">
+                                <span className="rounded-md bg-purple-50 px-2 py-0.5 font-semibold text-purple-700">
+                                  {item.categoryName}
+                                </span>
+                                {item.estimatedWeight && (
+                                  <span>• {item.estimatedWeight} {item.weightUnit || "kg"}</span>
+                                )}
+                                <span>• {item.condition}</span>
+                              </div>
+                            </td>
+                            <td className="px-5 py-4">
+                              <p className="font-bold text-slate-800">{item.senderName || item.donorName}</p>
+                              {item.senderPhone && (
+                                <p className="text-[11px] text-slate-400">{item.senderPhone}</p>
+                              )}
+                            </td>
+                            <td className="px-5 py-4 max-w-xs">
+                              <span className="inline-block rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700 mb-1">
+                                {item.shippingMethod?.replace(/_/g, " ") || "Pengiriman"}
+                              </span>
+                              <p className="text-[11px] text-slate-500 truncate" title={item.senderAddress || item.pickupPoint || ""}>
+                                {item.senderAddress || item.pickupPoint || "-"}
+                              </p>
+                            </td>
+                            <td className="px-5 py-4">
+                              <p className="font-bold text-slate-800">{item.mitraName || "Belum ditentukan"}</p>
+                            </td>
+                            <td className="px-5 py-4">
+                              <span
+                                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-extrabold ${
+                                  item.status === "MENUNGGU_VERIFIKASI"
+                                    ? "bg-amber-100 text-amber-800"
+                                    : item.status === "DITOLAK"
+                                      ? "bg-rose-100 text-rose-700"
+                                      : item.status === "MENUNGGU_PENJEMPUTAN" || item.status === "DALAM_PENGIRIMAN"
+                                        ? "bg-sky-100 text-sky-800"
+                                        : "bg-emerald-100 text-emerald-800"
+                                }`}
+                              >
+                                {item.status.replace(/_/g, " ")}
+                              </span>
+                            </td>
+                            <td className="px-5 py-4 text-right">
+                              <Link
+                                href="/admin/verifikasi-barang"
+                                className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-extrabold text-slate-700 hover:border-purple-600 hover:text-purple-600 transition-colors"
+                              >
+                                Detail
+                              </Link>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

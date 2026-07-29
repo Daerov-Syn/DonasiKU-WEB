@@ -21,6 +21,12 @@
   --color-brand-line: #dde3d9;
   --color-brand-danger: #b8462f;
   --color-brand-danger-soft: #f6e5e0;
+  --color-brand-purple: #7c3aed;
+  --color-brand-purple-dark: #5b21b6;
+  --color-brand-purple-light: #a78bfa;
+  --color-brand-purple-soft: #ede9fe;
+  --color-brand-success: #16a34a;
+  --color-brand-success-soft: #dcfce7;
 }
 
 html {

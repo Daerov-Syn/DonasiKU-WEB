@@ -15,11 +15,21 @@ export const loginSchema = z.object({
 export const donationItemSchema = z.object({
   categoryId: z.string().min(1, "Pilih kategori barang"),
   title: z.string().min(3, "Nama barang minimal 3 karakter"),
-  description: z.string().min(10, "Deskripsi minimal 10 karakter"),
-  condition: z.enum(["BARU", "SANGAT_BAIK", "LAYAK_PAKAI"]),
-  pickupPoint: z.string().min(3, "Pilih titik penjemputan"),
-  pickupLatitude: z.coerce.number(),
-  pickupLongitude: z.coerce.number(),
+  description: z.string().optional(),
+  condition: z.enum(["BARU", "SANGAT_BAIK", "LAYAK_PAKAI", "PERLU_PERBAIKAN"]),
+  estimatedWeight: z.coerce.number().min(0.1, "Berat minimal 0.1").optional(),
+  weightUnit: z.string().optional().default("kg"),
+  notes: z.string().optional(),
+  shippingMethod: z.enum(["JEMPUT_RELAWAN", "DROP_POINT", "EKSPEDISI"]).optional(),
+  senderName: z.string().optional(),
+  senderPhone: z.string().optional(),
+  senderAddress: z.string().optional(),
+  pickupDate: z.string().optional(),
+  pickupTime: z.string().optional(),
+  pickupPoint: z.string().optional(),
+  pickupLatitude: z.coerce.number().optional(),
+  pickupLongitude: z.coerce.number().optional(),
+  matchedProgramId: z.string().optional(),
 });
 
 export const donationMoneySchema = z.object({

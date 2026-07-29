@@ -95,7 +95,7 @@ CREATE TABLE IF NOT EXISTS donation_items (
   category_id TEXT NOT NULL REFERENCES categories(id),
   title TEXT NOT NULL,
   description TEXT,
-  condition TEXT NOT NULL CHECK (condition IN ('BARU','SANGAT_BAIK','LAYAK_PAKAI')),
+  condition TEXT NOT NULL CHECK (condition IN ('BARU','SANGAT_BAIK','LAYAK_PAKAI','PERLU_PERBAIKAN')),
   photos TEXT NOT NULL DEFAULT '[]',
   status TEXT NOT NULL DEFAULT 'MENUNGGU_VERIFIKASI',
   rejection_reason TEXT,
@@ -103,6 +103,16 @@ CREATE TABLE IF NOT EXISTS donation_items (
   pickup_point TEXT,
   pickup_latitude REAL,
   pickup_longitude REAL,
+  estimated_weight REAL,
+  weight_unit TEXT NOT NULL DEFAULT 'kg',
+  notes TEXT,
+  shipping_method TEXT CHECK (shipping_method IN ('JEMPUT_RELAWAN','DROP_POINT','EKSPEDISI')),
+  sender_name TEXT,
+  sender_phone TEXT,
+  sender_address TEXT,
+  pickup_date TEXT,
+  pickup_time TEXT,
+  tracking_code TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -168,6 +178,28 @@ let initialized = false;
 export function initSchema() {
   if (initialized) return;
   db.exec(SCHEMA);
+
+  // Migration: add new columns for wizard flow (safe to run on existing DB)
+  const migrations = [
+    "ALTER TABLE donation_items ADD COLUMN estimated_weight REAL",
+    "ALTER TABLE donation_items ADD COLUMN weight_unit TEXT DEFAULT 'kg'",
+    "ALTER TABLE donation_items ADD COLUMN notes TEXT",
+    "ALTER TABLE donation_items ADD COLUMN shipping_method TEXT",
+    "ALTER TABLE donation_items ADD COLUMN sender_name TEXT",
+    "ALTER TABLE donation_items ADD COLUMN sender_phone TEXT",
+    "ALTER TABLE donation_items ADD COLUMN sender_address TEXT",
+    "ALTER TABLE donation_items ADD COLUMN pickup_date TEXT",
+    "ALTER TABLE donation_items ADD COLUMN pickup_time TEXT",
+    "ALTER TABLE donation_items ADD COLUMN tracking_code TEXT",
+  ];
+  for (const sql of migrations) {
+    try {
+      db.exec(sql);
+    } catch {
+      // Column already exists or failed — skip
+    }
+  }
+
   initialized = true;
 }
 

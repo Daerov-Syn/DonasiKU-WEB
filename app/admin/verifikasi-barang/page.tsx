@@ -3,7 +3,9 @@ import { getCurrentUser } from "@/lib/session";
 import { listPendingVerificationItems, listProgramsNeedingCategory } from "@/lib/repo";
 import { approveItemAction, rejectItemAction } from "@/actions/admin";
 import { ConditionBadge } from "@/components/StatusBadge";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Package, MapPin, Truck, Phone, Calendar, Weight } from "lucide-react";
+import { SHIPPING_METHOD_LABEL } from "@/lib/types";
+import type { ShippingMethod } from "@/lib/types";
 
 export default async function AdminVerifikasiBarangPage() {
   const user = await getCurrentUser();
@@ -42,6 +44,55 @@ export default async function AdminVerifikasiBarangPage() {
                 </div>
 
                 <p className="mt-3 text-sm text-brand-ink-soft">{item.description}</p>
+
+                {/* New fields from wizard */}
+                <div className="mt-3 flex flex-wrap gap-3">
+                  {item.estimatedWeight && (
+                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-purple-50 px-3 py-1.5 text-xs font-semibold text-purple-700">
+                      <Package size={12} />
+                      {item.estimatedWeight} {item.weightUnit || "kg"}
+                    </span>
+                  )}
+                  {item.shippingMethod && (
+                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700">
+                      <Truck size={12} />
+                      {SHIPPING_METHOD_LABEL[item.shippingMethod as ShippingMethod] || item.shippingMethod}
+                    </span>
+                  )}
+                  {item.trackingCode && (
+                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-green-50 px-3 py-1.5 text-xs font-mono font-semibold text-green-700">
+                      Resi: {item.trackingCode}
+                    </span>
+                  )}
+                </div>
+
+                {/* Sender & pickup info */}
+                {(item.senderName || item.senderPhone || item.pickupDate) && (
+                  <div className="mt-3 rounded-xl bg-slate-50 p-3 text-xs text-brand-ink-soft space-y-1">
+                    {item.senderName && (
+                      <p className="flex items-center gap-1.5">
+                        <MapPin size={12} className="text-brand-purple" />
+                        Pengirim: <strong className="text-brand-ink">{item.senderName}</strong>
+                        {item.senderPhone && <> — <Phone size={12} /> {item.senderPhone}</>}
+                      </p>
+                    )}
+                    {item.senderAddress && (
+                      <p className="flex items-center gap-1.5">
+                        <MapPin size={12} className="text-brand-purple" />
+                        Alamat: {item.senderAddress}
+                      </p>
+                    )}
+                    {item.pickupDate && (
+                      <p className="flex items-center gap-1.5">
+                        <Calendar size={12} className="text-brand-purple" />
+                        Jadwal Jemput: {item.pickupDate} {item.pickupTime || ""}
+                      </p>
+                    )}
+                    {item.notes && (
+                      <p className="mt-1 italic">&ldquo;{item.notes}&rdquo;</p>
+                    )}
+                  </div>
+                )}
 
                 {item.photos.length > 0 && (
                   <div className="mt-3 flex gap-2 overflow-x-auto">

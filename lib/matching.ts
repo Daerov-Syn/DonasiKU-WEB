@@ -4,9 +4,21 @@ import { distanceKm } from "@/lib/geo";
 export interface MatchResult {
   programId: string;
   programTitle: string;
+  mitraId: string;
   mitraName: string;
+  mitraAddress: string;
+  mitraDistance: number | null;
+  mitraLatitude: number;
+  mitraLongitude: number;
   score: number;
+  maxScore: number;
+  scorePercent: number;
+  categoryNeeded: string[];
+  capacity: number;
+  urgencyLabel: string;
+  impactDescription: string;
   reasons: string[];
+  matchingExplanation: string;
 }
 
 /**
@@ -16,12 +28,16 @@ export interface MatchResult {
  */
 export function computeMatches(item: {
   categoryId: string;
+  categoryName?: string;
   pickupLatitude?: number | null;
   pickupLongitude?: number | null;
+  estimatedWeight?: number | null;
 }): MatchResult[] {
   const candidates: ProgramForMatching[] = listProgramsNeedingCategory(
     item.categoryId
   );
+
+  const maxPossible = 50 + 30 + 20; // urgency + distance + quota
 
   const scored = candidates.map(({ program, mitra, urgency }) => {
     const reasons: string[] = [];
@@ -30,10 +46,19 @@ export function computeMatches(item: {
     // Bobot urgensi (1-5 -> 0-50)
     const urgencyScore = urgency * 10;
     score += urgencyScore;
-    if (urgency >= 4) reasons.push("kebutuhan mendesak dari mitra");
+    let urgencyLabel = "Membutuhkan";
+    if (urgency >= 4) {
+      reasons.push("kebutuhan mendesak dari mitra");
+      urgencyLabel = "Sedang membutuhkan";
+    } else if (urgency >= 2) {
+      urgencyLabel = "Membutuhkan";
+    } else {
+      urgencyLabel = "Menerima donasi";
+    }
 
     // Bobot jarak
     let distanceScore = 15; // default netral kalau lokasi tidak diketahui
+    let mitraDistance: number | null = null;
     if (
       item.pickupLatitude != null &&
       item.pickupLongitude != null &&
@@ -46,6 +71,7 @@ export function computeMatches(item: {
         mitra.latitude,
         mitra.longitude
       );
+      mitraDistance = Math.round(dist * 10) / 10;
       if (dist < 5) {
         distanceScore = 30;
         reasons.push("lokasi sangat dekat (<5 km)");
@@ -59,24 +85,52 @@ export function computeMatches(item: {
     score += distanceScore;
 
     // Bobot kuota: makin besar target vs terkumpul (untuk program KEDUANYA/UANG), makin butuh
+    let capacity = 0;
     if (program.targetAmount && program.targetAmount > 0) {
       const progress = program.collectedAmount / program.targetAmount;
+      capacity = program.targetAmount - program.collectedAmount;
       if (progress < 0.5) {
-        score += 10;
+        score += 20;
         reasons.push("program masih jauh dari target");
+      } else if (progress < 0.8) {
+        score += 10;
+      } else {
+        score += 5;
       }
     } else {
-      score += 5;
+      score += 10;
+      capacity = 100;
     }
 
     if (reasons.length === 0) reasons.push("kategori barang sesuai kebutuhan mitra");
 
+    const scorePercent = Math.round((score / maxPossible) * 100);
+
+    // Build explanation text
+    const catName = item.categoryName || "barang";
+    const weightText = item.estimatedWeight ? ` sebanyak ${item.estimatedWeight} kg` : "";
+    const matchingExplanation = `Donasi ${catName}${weightText} akan dicocokkan dengan yayasan terdekat secara presisi. ${reasons.join(". ")}. Kombinasi ini sangat bermanfaat karena mencakup kebutuhan pokok harian yang vital. Setiap donasi yang diterima akan langsung membantu menghemat biaya operasional dapur panti asuhan untuk menyajikan makanan bergizi bagi anak-anak yang membutuhkan.`;
+
+    const impactDescription = `"Menjamin kebutuhan ${catName.toLowerCase()} untuk ${capacity > 0 ? capacity : 45} santri & lansia dhuafa."`;
+
     return {
       programId: program.id,
       programTitle: program.title,
+      mitraId: mitra.id,
       mitraName: mitra.orgName,
+      mitraAddress: mitra.address,
+      mitraDistance,
+      mitraLatitude: mitra.latitude,
+      mitraLongitude: mitra.longitude,
       score,
+      maxScore: maxPossible,
+      scorePercent,
+      categoryNeeded: [], // Will be enriched by caller
+      capacity,
+      urgencyLabel,
+      impactDescription,
       reasons,
+      matchingExplanation,
     };
   });
 

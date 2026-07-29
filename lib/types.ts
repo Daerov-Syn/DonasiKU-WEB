@@ -1,6 +1,8 @@
 export type UserRole = "DONATUR" | "MITRA" | "ADMIN";
 
-export type ItemCondition = "BARU" | "SANGAT_BAIK" | "LAYAK_PAKAI";
+export type ItemCondition = "BARU" | "SANGAT_BAIK" | "LAYAK_PAKAI" | "PERLU_PERBAIKAN";
+
+export type ShippingMethod = "JEMPUT_RELAWAN" | "DROP_POINT" | "EKSPEDISI";
 
 export type ItemStatus =
   | "MENUNGGU_VERIFIKASI"
@@ -86,6 +88,16 @@ export interface DonationItem {
   pickupPoint: string | null;
   pickupLatitude: number | null;
   pickupLongitude: number | null;
+  estimatedWeight: number | null;
+  weightUnit: string;
+  notes: string | null;
+  shippingMethod: ShippingMethod | null;
+  senderName: string | null;
+  senderPhone: string | null;
+  senderAddress: string | null;
+  pickupDate: string | null;
+  pickupTime: string | null;
+  trackingCode: string | null;
   createdAt: string;
 }
 
@@ -167,6 +179,13 @@ export const CONDITION_LABEL: Record<ItemCondition, string> = {
   BARU: "Baru",
   SANGAT_BAIK: "Sangat Baik",
   LAYAK_PAKAI: "Layak Pakai",
+  PERLU_PERBAIKAN: "Perlu Perbaikan",
+};
+
+export const SHIPPING_METHOD_LABEL: Record<ShippingMethod, string> = {
+  JEMPUT_RELAWAN: "Jemput Relawan",
+  DROP_POINT: "Drop Point Terdekat",
+  EKSPEDISI: "Kirim via Ekspedisi",
 };
 
 export const PAYMENT_STATUS_LABEL: Record<PaymentStatus, string> = {

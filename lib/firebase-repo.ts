@@ -112,6 +112,16 @@ function mapFirestoreToDonationItem(docId: string, data: DocumentData): Donation
     pickupPoint: data.pickupPoint || data.pickup_point || data.titik_jemput || null,
     pickupLatitude: data.pickupLatitude ?? data.pickup_latitude ?? null,
     pickupLongitude: data.pickupLongitude ?? data.pickup_longitude ?? null,
+    estimatedWeight: data.estimatedWeight ?? data.berat ?? null,
+    weightUnit: data.weightUnit || data.satuan_berat || "kg",
+    notes: data.notes || data.catatan || null,
+    shippingMethod: data.shippingMethod || data.metode_pengiriman || null,
+    senderName: data.senderName || data.nama_pengirim || null,
+    senderPhone: data.senderPhone || data.no_telepon_pengirim || null,
+    senderAddress: data.senderAddress || data.alamat_pengirim || null,
+    pickupDate: data.pickupDate || data.tanggal_jemput || null,
+    pickupTime: data.pickupTime || data.jam_jemput || null,
+    trackingCode: data.trackingCode || data.kode_resi || null,
     createdAt: data.createdAt || data.created_at || new Date().toISOString(),
   };
 }

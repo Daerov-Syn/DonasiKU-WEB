@@ -11,6 +11,7 @@ import type {
   DonationItem,
   ItemCondition,
   ItemStatus,
+  ShippingMethod,
   TrackingStatusLog,
   DonationMoney,
   PaymentMethod,
@@ -98,6 +99,16 @@ function toItem(r: Row): DonationItem {
     pickupPoint: r.pickup_point,
     pickupLatitude: r.pickup_latitude,
     pickupLongitude: r.pickup_longitude,
+    estimatedWeight: r.estimated_weight,
+    weightUnit: r.weight_unit || "kg",
+    notes: r.notes,
+    shippingMethod: r.shipping_method as ShippingMethod | null,
+    senderName: r.sender_name,
+    senderPhone: r.sender_phone,
+    senderAddress: r.sender_address,
+    pickupDate: r.pickup_date,
+    pickupTime: r.pickup_time,
+    trackingCode: r.tracking_code,
     createdAt: r.created_at,
   };
 }
@@ -575,6 +586,12 @@ export function getProgramWithMitra(
 /* Donation Items (Donasi Barang)                                      */
 /* ------------------------------------------------------------------ */
 
+export function generateTrackingCode(): string {
+  const year = new Date().getFullYear();
+  const rand = Math.floor(10000 + Math.random() * 90000);
+  return `DON-${year}-${rand}`;
+}
+
 export function createDonationItem(input: {
   donorId: string;
   categoryId: string;
@@ -585,12 +602,25 @@ export function createDonationItem(input: {
   pickupPoint?: string | null;
   pickupLatitude?: number | null;
   pickupLongitude?: number | null;
+  estimatedWeight?: number | null;
+  weightUnit?: string;
+  notes?: string | null;
+  shippingMethod?: ShippingMethod | null;
+  senderName?: string | null;
+  senderPhone?: string | null;
+  senderAddress?: string | null;
+  pickupDate?: string | null;
+  pickupTime?: string | null;
+  matchedProgramId?: string | null;
 }): DonationItem {
   const id = randomUUID();
+  const trackingCode = generateTrackingCode();
   db.prepare(
     `INSERT INTO donation_items
-     (id, donor_id, category_id, title, description, condition, photos, pickup_point, pickup_latitude, pickup_longitude)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+     (id, donor_id, category_id, title, description, condition, photos, pickup_point, pickup_latitude, pickup_longitude,
+      estimated_weight, weight_unit, notes, shipping_method, sender_name, sender_phone, sender_address,
+      pickup_date, pickup_time, tracking_code, matched_program_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     id,
     input.donorId,
@@ -599,12 +629,56 @@ export function createDonationItem(input: {
     input.description ?? null,
     input.condition,
     JSON.stringify(input.photos),
-    input.pickupPoint ?? null,
+    input.pickupPoint || null,
     input.pickupLatitude ?? null,
-    input.pickupLongitude ?? null
+    input.pickupLongitude ?? null,
+    input.estimatedWeight ?? null,
+    input.weightUnit || "kg",
+    input.notes || null,
+    input.shippingMethod || null,
+    input.senderName || null,
+    input.senderPhone || null,
+    input.senderAddress || null,
+    input.pickupDate || null,
+    input.pickupTime || null,
+    trackingCode,
+    input.matchedProgramId || null
   );
   addTrackingLog(id, "MENUNGGU_VERIFIKASI", "Donasi barang diterima sistem, menunggu verifikasi admin.", "DONATUR");
   return getDonationItemById(id)!;
+}
+
+export function listAllDonationItemsForAdmin(): (DonationItem & {
+  donorName: string;
+  categoryName: string;
+  mitraName: string | null;
+})[] {
+  const rows = db
+    .prepare(
+      `SELECT di.*, u.name as donor_name, c.name as category_name
+       FROM donation_items di
+       JOIN users u ON u.id = di.donor_id
+       JOIN categories c ON c.id = di.category_id
+       ORDER BY di.created_at DESC`
+    )
+    .all() as Row[];
+  return rows.map((r) => {
+    const item = toItem(r);
+    let mitraName: string | null = null;
+    if (item.matchedProgramId) {
+      const prog = getProgramById(item.matchedProgramId);
+      if (prog) {
+        const mitra = getMitraProfileById(prog.mitraId);
+        mitraName = mitra?.orgName ?? null;
+      }
+    }
+    return {
+      ...item,
+      donorName: r.donor_name,
+      categoryName: r.category_name,
+      mitraName,
+    };
+  });
 }
 
 export function getDonationItemById(id: string): DonationItem | null {

@@ -1,4 +1,4 @@
-// Avoid importing types from 'next' to prevent missing declaration errors in some setups
+import type { Metadata } from "next";
 import "@fontsource/space-grotesk/500.css";
 import "@fontsource/space-grotesk/600.css";
 import "@fontsource/space-grotesk/700.css";
@@ -10,7 +10,7 @@ import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "DonasiKu — Salurkan Barang & Dana yang Masih Berarti",
   description:
     "Platform donasi barang layak pakai dan dana yang menghubungkan Anda dengan panti asuhan, panti jompo, dan lembaga sosial terverifikasi.",
