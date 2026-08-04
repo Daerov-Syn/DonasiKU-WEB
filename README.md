@@ -1,154 +1,129 @@
-# DonasiKu — Smart Reuse Platform (Web)
+# DonasiKu — Zero-Waste Crowdfunding & Re-Use Platform (Web)
 
-Implementasi website dari PRD `PRD_DonasiKu_Website.md`, dibangun dengan
-**Next.js 16 (App Router) + React 19** di frontend & backend, dan
-**SQLite** (via `node:sqlite` bawaan Node.js) sebagai database.
+[![Next.js 16](https://img.shields.io/badge/Next.js-16.2-purple?style=flat&logo=next.js)](https://nextjs.org/)
+[![React 19](https://img.shields.io/badge/React-19-blue?style=flat&logo=react)](https://react.dev/)
+[![Firebase Firestore](https://img.shields.io/badge/Firebase-Firestore-orange?style=flat&logo=firebase)](https://firebase.google.com/)
+[![SQLite](https://img.shields.io/badge/SQLite-Better--SQLite3-blue?style=flat&logo=sqlite)](https://www.sqlite.org/)
 
-Fokus utama pengalaman **donatur** (sesuai permintaan): login/register,
-landing page, katalog program, donasi barang & uang, Smart Matching, peta
-mitra, tracking, riwayat, sertifikat, notifikasi, dan halaman dampak/edukasi
-— dengan Portal Mitra & Admin minimum agar seluruh alur benar-benar
-berfungsi end-to-end (bukan sekadar tampilan statis).
+Platform crowdfunding donasi barang layak pakai & donasi uang transparan untuk pencegahan penumpukan sampah (Zero Waste) yang menghubungkan donatur dengan panti asuhan, panti jompo, dan lembaga sosial terverifikasi di wilayah Surabaya & sekitarnya.
 
 ---
 
-## 1. Prasyarat
+## 🌟 Fitur Utama & Pengalaman Pengguna (UX)
 
-- **Node.js 22.5 atau lebih baru** (wajib — proyek ini memakai modul
-  bawaan `node:sqlite` yang baru tersedia mulai versi tersebut).
-  Cek versi: `node -v`
-- npm (sudah termasuk dalam instalasi Node.js)
+- **📱 Interactive Phone Mockup (Hero Landing Page)**: Mockup frame smartphone iPhone dengan *Dynamic Island*, badge notifikasi real-time, ringkasan dampak lingkungan, dan aksi cepat donasi.
+- **📦 4-Step Donasi Barang Wizard**: Pendaftaran donasi barang berbasis langkah interaktif dengan kategorisasi, estimasi berat, opsi penjemputan relawan/kurir/drop-point, dan Smart Matching AI.
+- **💰 Donasi Uang Transparan**: Dukungan donasi dana per program atau donasi umum dengan simulasi metode pembayaran Transfer Bank (Virtual Account) dan QRIS.
+- **👑 Admin Control Dashboard (`/admin`)**: Hub kontrol penuh admin untuk verifikasi barang masuk, verifikasi pendaftaran mitra baru, pelaporan donasi dana/barang, dan audit log donatur.
+- **📜 Sertifikat Digital PDF**: Generasi otomatis sertifikat apresiasi donatur berbasis PDF yang dapat diunduh langsung setelah donasi terdistribusi.
+- **♻️ Zero Waste & Impact Calculator**: Kalkulasi otomatis pencegahan sampah (kg) dan estimasi jumlah penerima manfaat yang terbantu.
+- **📍 Peta Interactive Drop-Point**: Integrasi peta lokasi panti & posko penampungan terdekat di Surabaya.
+- **⚡ Performance & High Aesthetics**: Penggunaan Tailwind CSS, modern typography, micro-animations, kompresi otomatis `next/image` (WebP/AVIF), dan *code-splitting* via `next/dynamic`.
 
-## 2. Instalasi & Menjalankan
+---
+
+## 🗄️ Arsitektur Dual Database (Hybrid Layer)
+
+DonasiKu menggunakan **Arsitektur Layer Terunifikasi (Unified Repository Pattern)** yang menggabungkan kecepatan lokal dengan sinkronisasi cloud:
+
+```
+                  ┌─────────────────────────────────────┐
+                  │    Next.js Web / React 19 Frontend  │
+                  └──────────────────┬──────────────────┘
+                                     │
+                        ┌────────────┴────────────┐
+                        ▼                         ▼
+            ┌───────────────────────┐ ┌───────────────────────┐
+            │   Firebase Firestore  │ │     SQLite Database   │
+            │   (Cloud / Cross-App) │ │   (Local / Fallback)  │
+            └───────────────────────┘ └───────────────────────┘
+```
+
+1. **Firebase Firestore (Utama / Cloud)**:
+   - Menyimpan data real-time pengguna, program donasi, item barang, dan transaksi uang.
+   - Menggunakan mapping field **Dual-Format** (Web `camelCase` & Mobile `Bahasa Indonesia`) sehingga dapat dibaca & ditulis secara harmonis oleh aplikasi Web dan Android.
+2. **SQLite (`better-sqlite3` + Fallback Layer)**:
+   - Berfungsi sebagai database lokal berkecepatan tinggi & *graceful fallback* jika koneksi cloud/Firebase mengalami offline/permission denied.
+   - Keamanan query 100% menggunakan *Prepared Statements* (bebas dari SQL Injection).
+
+---
+
+## 🚀 Instalasi & Memulai Proyek
+
+### 1. Prasyarat Sistem
+- **Node.js 18.x atau lebih baru** (Direkomendasikan Node.js 20/22).
+- **npm** (Bawaan Node.js).
+
+### 2. Langkah Instalasi
 
 ```bash
+# 1. Clone repositori
+git clone https://github.com/Daerov-Syn/DonasiKU-WEB.git
+cd DonasiKU-WEB
+
+# 2. Install dependensi
 npm install
-npm run db:seed     # membuat database SQLite + data demo (kategori, mitra, program, akun)
-npm run dev         # jalankan mode development di http://localhost:3000
+
+# 3. Inisialisasi database SQLite lokal & data seed demo
+npm run db:seed
+
+# 4. Jalankan mode pengembangan
+npm run dev
 ```
 
-Untuk mode produksi:
+Aplikasi dapat diakses di: `http://localhost:3000`
 
+### 3. Sinkronisasi Data ke Firestore
+Untuk menyinkronkan seluruh program donasi demo ke Firestore:
 ```bash
-npm run build
-npm run start
+# Jalankan perintah HTTP POST (saat npm run dev berjalan)
+Invoke-RestMethod -Uri http://localhost:3000/api/sync-programs -Method POST
 ```
 
-> Database SQLite disimpan di `data/donasiku.db` (otomatis dibuat). File
-> upload demo (foto barang, dokumen legalitas) disimpan di
-> `data/uploads/`. Keduanya diabaikan oleh git (`.gitignore`) dan **tidak
-> disertakan** dalam paket ini — jalankan `npm run db:seed` setelah
-> `npm install` untuk membuatnya.
+---
 
-Untuk mengulang dari awal (hapus semua data & buat ulang seed):
+## 🔑 Akun Demo (End-to-End Testing)
 
-```bash
-npm run db:reset
+| Peran | Email | Password | Akses Fitur Utama |
+|---|---|---|---|
+| **Donatur** | `donor@donasiku.id` | `donatur123` | Landing page, Beranda, Donasi Barang Wizard, Donasi Uang, Riwayat, Sertifikat |
+| **Mitra (Terverifikasi)** | `kasihbunda@donasiku.id` | `mitra123` | Dashboard Mitra, Manajemen Status Pengiriman & Penyaluran Barang |
+| **Mitra (Belum Verifikasi)** | `nurulimansda@donasiku.id` | `mitra123` | Demo pengujian halaman persetujuan mitra oleh admin |
+| **Admin Control** | `admin@donasiku.id` | `admin123` | Dashboard Control (`/admin`), Verifikasi Barang, Verifikasi Mitra, Laporan Donasi |
+
+---
+
+## 📁 Struktur Direktori Proyek
+
+```text
+DonasiKU-WEB/
+├── actions/                  # Server Actions (auth, donasi, profil, mitra, admin)
+├── app/                      # Next.js App Router (Rute & Halaman Fitur)
+│   ├── admin/                # Dashboard Admin Control (/admin)
+│   ├── api/                  # Route Handlers (Sync, Matching, PDF, Uploads)
+│   ├── bantuan/              # Halaman FAQ & Bantuan
+│   ├── beranda/              # Beranda User & Katalog Program
+│   ├── dampak/               # Halaman Edukasi & Kisah Dampak
+│   ├── donasi/               # Form Donasi Barang Wizard & Donasi Uang
+│   ├── mitra/                # Dashboard & Pendaftaran Mitra
+│   ├── peta/                 # Interactive Map Drop-Point
+│   └── riwayat/              # Tracking & Riwayat Donasi
+├── components/               # Komponen UI React (Reusable & Optimized)
+├── lib/                      # Unified Layer (firebase-repo, unified-repo, db, auth)
+├── public/                   # Asset Statis (Gambar Program, Banner CTA)
+└── scripts/                  # Script Seed & Database Reset
 ```
 
-## 3. Akun Demo
+---
 
-| Peran | Email | Password |
-|---|---|---|
-| Donatur | `donor@donasiku.id` | `donatur123` |
-| Mitra (terverifikasi) | `kasihbunda@donasiku.id` | `mitra123` |
-| Mitra (terverifikasi) | `wismalansia@donasiku.id` | `mitra123` |
-| Mitra (**belum** terverifikasi — untuk demo halaman verifikasi admin) | `nurulimansda@donasiku.id` | `mitra123` |
-| Admin | `admin@donasiku.id` | `admin123` |
+## 🔒 Keamanan & Performa
 
-Atau, daftar akun donatur baru sendiri lewat halaman `/register`, dan akun
-mitra baru lewat `/mitra/daftar` (butuh persetujuan admin sebelum bisa
-membuat program).
+- **Database Security**: Query SQLite menggunakan Prepared Statements (`db.prepare`). Input form disanitasi & divalidasi via **Zod Schema**.
+- **Image Optimization**: Menggunakan `next/image` dengan kompresi otomatis **WebP/AVIF** & *lazy-loading*.
+- **Code Splitting**: Penggunaan `next/dynamic` untuk modul modal sehingga *initial JS bundle* tetap super cepat.
+- **Cookie Security**: Sesi pengguna dikunci dengan flag `httpOnly: true` dan `sameSite: "lax"`.
 
-## 4. Alur untuk Dicoba
+---
 
-1. **Sebagai Donatur** (`donor@donasiku.id`): jelajahi `/beranda`, lakukan
-   donasi barang di `/donasi/barang/baru` (upload foto apa saja) dan
-   donasi uang di homepage → lihat rekomendasi Smart Matching, lalu pantau
-   di `/riwayat`.
-2. **Sebagai Admin** (`admin@donasiku.id`): buka `/admin/verifikasi-barang`
-   untuk menyetujui/menolak barang yang baru masuk, dan
-   `/admin/verifikasi-mitra` untuk menyetujui mitra "Panti Asuhan Nurul
-   Iman" yang sengaja dibuat belum terverifikasi.
-3. **Sebagai Mitra** (`kasihbunda@donasiku.id`): buka `/mitra/beranda` →
-   pilih program → perbarui status barang (dijemput → diterima → selesai
-   disalurkan). Status ini langsung terlihat di halaman tracking donatur,
-   dan sertifikat donasi otomatis terbit begitu status "Selesai
-   Didistribusikan".
-
-## 5. Struktur Proyek
-
-```
-app/            Halaman & route (App Router) — 1 folder = 1 route
-actions/        Server Actions (mutasi data: auth, donasi, profil, mitra, admin)
-components/     Komponen React yang dipakai di berbagai halaman
-lib/            Logic inti: db.ts (skema SQLite), repo.ts (akses data),
-                auth.ts & session.ts (autentikasi), matching.ts (Smart
-                Matching), certificate.ts (generate PDF), validators.ts (zod)
-scripts/seed.ts Script pengisi data demo
-data/           Database SQLite & file upload (dibuat otomatis, di-gitignore)
-```
-
-## 6. Pemetaan ke PRD
-
-Hampir seluruh `FR-*` di `PRD_DonasiKu_Website.md` Bab 7 sudah
-diimplementasikan. Ringkasannya:
-
-| Area PRD | Status |
-|---|---|
-| Autentikasi (`FR-AUTH-*`) | ✅ Register/login/logout + simulasi verifikasi email |
-| Landing Page (`FR-LAND-*`) | ✅ Termasuk animasi Smart Matching & scroll-reveal |
-| Homepage/Katalog (`FR-HOME-*`) | ✅ Filter, search, rekomendasi personal |
-| Donasi Barang (`FR-DONBRG-*`) | ✅ Upload foto, kondisi, smart matching otomatis |
-| Donasi Uang (`FR-DONUANG-*`) | ✅ Alur lengkap dengan **payment gateway simulasi** |
-| Peta (`FR-MAP-*`) | ✅ Leaflet + OpenStreetMap |
-| Smart Matching (`FR-MATCH-*`) | ✅ Rule-based (Bab 11.1). Versi AI/LLM (11.2) belum |
-| Tracking (`FR-TRACK-*`) | ✅ Timeline status, audit log append-only |
-| Riwayat (`FR-HIST-*`) | ✅ |
-| Laporan Real-time (`FR-REPORT-*`) | ✅ Data diambil langsung tiap request (lihat catatan real-time di bawah) |
-| Profil (`FR-PROFILE-*`) | ✅ Termasuk hapus akun (anonimkan) |
-| Edukasi Dampak (`FR-IMPACT-*`) | ✅ Kisah dampak, statistik, tombol share |
-| Sertifikat (`FR-CERT-*`) | ✅ PDF asli via `pdf-lib`, bisa diunduh ulang |
-| Notifikasi (`FR-NOTIF-*`) | ✅ In-app. Email belum (lihat keterbatasan) |
-| Bantuan/Privasi (`FR-HELP-*`, `FR-PRIV-*`) | ✅ |
-| Portal Mitra/Admin (`FR-MITRA-*`, `FR-ADMIN-*`) | ✅ Versi minimum sesuai cakupan PRD |
-
-## 7. Keterbatasan Versi Demo (disengaja, agar mudah dijalankan siapa saja)
-
-- **Payment gateway**: donasi uang memakai halaman simulasi pembayaran
-  (tombol "Simulasikan Pembayaran Berhasil"), bukan integrasi Midtrans/
-  Xendit sungguhan (butuh akun merchant asli — lihat PRD Bab 9.6 untuk
-  rencana integrasinya).
-- **Verifikasi email**: disimulasikan dengan satu klik tombol (bukan
-  mengirim email sungguhan, karena butuh layanan SMTP/email pihak
-  ketiga).
-- **Notifikasi email**: hanya notifikasi in-app yang aktif; pengiriman
-  email sungguhan belum diimplementasikan.
-- **Real-time**: statistik & tracking diambil langsung dari database
-  setiap kali halaman dibuka/refresh (selalu data terbaru), namun belum
-  memakai WebSocket/polling otomatis seperti dibahas di PRD Bab 9.4 —
-  untuk melihat update, refresh halaman.
-- **Penyimpanan file**: foto barang & dokumen legalitas disimpan di
-  folder lokal `data/uploads/` (disajikan lewat route
-  `/api/uploads/...`), bukan object storage seperti S3/Cloudinary (lihat
-  PRD Bab 9.5).
-- **Database**: memakai `node:sqlite` bawaan Node.js, bukan Prisma +
-  MySQL seperti rekomendasi produksi di PRD Bab 9.2. Ini murni
-  keterbatasan lingkungan pembuatan proyek ini (tidak bisa mengunduh
-  binary engine Prisma), **bukan berarti SQLite adalah rekomendasi
-  produksi** — skema tabel di `lib/db.ts` sengaja dibuat semirip mungkin
-  dengan skema Prisma di PRD supaya mudah dimigrasikan. Untuk beban
-  pengguna banyak/produksi sungguhan, ikuti rekomendasi MySQL di PRD.
-- **Smart Matching**: versi rule-based (kategori + urgensi + jarak +
-  kuota) sesuai PRD Bab 11.1. Versi AI/LLM lanjutan (Bab 11.2) belum
-  dibangun.
-- **Kisah Dampak**: mitra belum punya UI untuk menulis kisah baru
-  (hanya ditampilkan dari data seed) — di PRD ini memang ditandai sebagai
-  penyederhanaan yang wajar untuk versi awal.
-
-## 8. Rencana Lanjutan
-
-Lihat Bab 13 (Roadmap) dan Bab 15 (Pertanyaan Terbuka) di
-`PRD_DonasiKu_Website.md` untuk fase-fase berikutnya, termasuk migrasi ke
-MySQL, integrasi payment gateway sungguhan, dan Smart Matching berbasis AI.
-#
+## 📄 Lisensi
+Hak Cipta © 2026 **DonasiKu Platform Team**. Dibuat untuk gerakan kebaikan & Zero Waste.
