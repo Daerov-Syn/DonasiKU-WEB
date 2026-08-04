@@ -82,7 +82,7 @@ export default async function Header() {
               </Link>
 
               <Link
-                href="/donasi/uang/umum"
+                href="/beranda?type=UANG"
                 className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-bold text-slate-800 hover:bg-purple-50 hover:text-purple-700 transition-colors"
               >
                 <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-100 text-purple-700">
@@ -134,7 +134,7 @@ export default async function Header() {
                 </Link>
 
                 <Link
-                  href="/donasi/uang/umum"
+                  href="/beranda?type=UANG"
                   className="flex items-center gap-2 px-4 py-2 text-sm text-purple-700 hover:bg-purple-50 font-bold"
                 >
                   <Wallet size={14} className="text-amber-500" /> Donasi Uang Sekarang

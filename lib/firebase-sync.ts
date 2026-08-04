@@ -98,6 +98,7 @@ export async function syncDonationItemToFirestore(item: DonationItem): Promise<v
     kondisi: item.condition,
     foto: item.photos,
     donor_id: item.donorId,
+    userId: item.donorId,
     category_id: item.categoryId,
     titik_jemput: item.pickupPoint,
     berat: item.estimatedWeight,
@@ -114,8 +115,11 @@ export async function syncDonationItemToFirestore(item: DonationItem): Promise<v
 }
 
 // ======================== DONASI UANG ========================
-export async function syncDonationMoneyToFirestore(money: DonationMoney): Promise<void> {
-  // Tulis ke "donation_money" (web) DAN "donasiDana" (mobile)
+export async function syncDonationMoneyToFirestore(
+  money: DonationMoney,
+  extra?: { donorName?: string; programNama?: string; pesan?: string }
+): Promise<void> {
+  // 1. Format Web & Mobile standar
   const data = {
     id: money.id,
     donorId: money.donorId,
@@ -136,6 +140,34 @@ export async function syncDonationMoneyToFirestore(money: DonationMoney): Promis
   };
   await syncToFirestore("donation_money", money.id, data);
   await syncToFirestore("donasiDana", money.id, data);
+
+  // 2. Format Tabel Database (donatur_dana) — Sesuai struktur Firestore gambar 2
+  let dateObj = money.createdAt ? new Date(money.createdAt) : new Date();
+  if (isNaN(dateObj.getTime())) {
+    dateObj = new Date();
+  }
+
+  const formattedDate = dateObj.toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }) + ", " + dateObj.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+
+  const donaturDanaData = {
+    fotoBarang: null,
+    id: money.id,
+    metodePengiriman: money.method === "QRIS" ? "QRIS - QRIS" : "Transfer Bank - Transfer Bank",
+    namaDonatur: extra?.donorName || (money.isAnonymous ? "Anonim" : "Donatur Dermawan"),
+    nominal: money.amount,
+    pesan: extra?.pesan || "semoga berkah",
+    programId: money.programId || "umum",
+    programNama: extra?.programNama || "Donasi umum DonasiKu",
+    status: money.paymentStatus === "BERHASIL" ? "Berhasil" : money.paymentStatus === "GAGAL" ? "Gagal" : "Menunggu",
+    tanggalDonasi: formattedDate,
+    timestamp: dateObj.toISOString(),
+    userId: money.donorId,
+  };
+  await syncToFirestore("donatur_dana", money.id, donaturDanaData);
 }
 
 // ======================== SERTIFIKAT ========================
@@ -180,7 +212,7 @@ export async function syncProgramToFirestore(program: Program): Promise<void> {
     coverImageUrl: program.coverImageUrl,
     status: program.status,
     createdAt: program.createdAt,
-    // Format Mobile
+    // Format Mobile / Database Table
     mitra_id: program.mitraId,
     judul: program.title,
     deskripsi: program.description,
@@ -188,5 +220,7 @@ export async function syncProgramToFirestore(program: Program): Promise<void> {
     target_amount: program.targetAmount,
     collected_amount: program.collectedAmount,
     gambar: program.coverImageUrl,
+    programNama: program.title,
+    created_at: program.createdAt,
   });
 }

@@ -35,7 +35,8 @@ export async function submitBarangWizardAction(
 
   try {
     // Ensure user exists in SQLite DB to satisfy Foreign Key constraints
-    upsertUser(user);
+    // upsertUser may return a different user object if email already exists under different ID
+    const dbUser = upsertUser(user);
 
     // Extract form data
     let categoryId = (formData.get("categoryId") as string) || null;
@@ -46,8 +47,8 @@ export async function submitBarangWizardAction(
     const weightUnit = (formData.get("weightUnit") as string) || "kg";
     const notes = formData.get("notes") as string | null;
     const shippingMethod = (formData.get("shippingMethod") as ShippingMethod) || "JEMPUT_RELAWAN";
-    const senderName = (formData.get("senderName") as string) || user.name;
-    const senderPhone = (formData.get("senderPhone") as string) || user.phone || "";
+    const senderName = (formData.get("senderName") as string) || dbUser.name;
+    const senderPhone = (formData.get("senderPhone") as string) || dbUser.phone || "";
     const senderAddress = formData.get("senderAddress") as string | null;
     const pickupDate = formData.get("pickupDate") as string | null;
     const pickupTime = formData.get("pickupTime") as string | null;
@@ -57,15 +58,28 @@ export async function submitBarangWizardAction(
       return { error: "Pilih kategori barang terlebih dahulu." };
     }
 
-    // Validate categoryId in SQLite DB
+    // Validate categoryId — if from Firebase and not in SQLite, insert it
     let validCategory = getCategoryById(categoryId);
     if (!validCategory) {
-      const allCategories = listCategories();
-      const fallbackCat = allCategories.find((c) => c.id === categoryId) || allCategories[0];
-      if (fallbackCat) {
-        categoryId = fallbackCat.id;
-      } else {
-        return { error: "Kategori barang tidak ditemukan di database." };
+      // Try inserting the Firebase category into SQLite so FK constraint is satisfied
+      try {
+        const { db: sqliteDb } = await import("@/lib/db");
+        const catName = (formData.get("title") as string) || "Donasi Barang";
+        sqliteDb.prepare(
+          "INSERT OR IGNORE INTO categories (id, name, icon) VALUES (?, ?, ?)"
+        ).run(categoryId, catName, null);
+        validCategory = getCategoryById(categoryId);
+      } catch {
+        // fallback: use first available category
+      }
+      if (!validCategory) {
+        const allCategories = listCategories();
+        const fallbackCat = allCategories.find((c) => c.id === categoryId) || allCategories[0];
+        if (fallbackCat) {
+          categoryId = fallbackCat.id;
+        } else {
+          return { error: "Kategori barang tidak ditemukan di database." };
+        }
       }
     }
 
@@ -109,7 +123,7 @@ export async function submitBarangWizardAction(
 
     // Create donation item in SQLite
     const item = createDonationItem({
-      donorId: user.id,
+      donorId: dbUser.id,
       categoryId,
       title,
       description: description || notes || null,
@@ -131,8 +145,10 @@ export async function submitBarangWizardAction(
     });
 
     // Sync to Firestore (non-blocking safe)
+    // Use session user.id for Firestore donorId so riwayat query matches
     try {
-      await syncDonationItemToFirestore(item);
+      const firestoreItem = { ...item, donorId: user.id };
+      await syncDonationItemToFirestore(firestoreItem);
     } catch (err) {
       console.warn("[submitBarangWizardAction] Firestore item sync warning:", err);
     }
@@ -142,7 +158,7 @@ export async function submitBarangWizardAction(
       const certNo = generateCertificateNumber();
       const cert = createCertificate({
         certificateNo: certNo,
-        donorId: user.id,
+        donorId: dbUser.id,
         donationItemId: item.id,
       });
       await syncCertificateToFirestore(cert);
@@ -154,7 +170,7 @@ export async function submitBarangWizardAction(
     try {
       const notifMessage = `Donasi barang "${item.title}" telah berhasil dicocokkan dan sedang diproses. Kode resi: ${item.trackingCode}`;
       createNotification({
-        userId: user.id,
+        userId: dbUser.id,
         type: "status_barang",
         message: notifMessage,
       });

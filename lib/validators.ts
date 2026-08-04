@@ -37,6 +37,7 @@ export const donationMoneySchema = z.object({
   amount: z.coerce.number().min(10000, "Minimal donasi Rp10.000"),
   method: z.enum(["BANK_TRANSFER", "QRIS"]),
   isAnonymous: z.coerce.boolean().optional(),
+  pesan: z.string().optional(),
 });
 
 export const profileUpdateSchema = z.object({

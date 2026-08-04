@@ -9,6 +9,7 @@
     "lint": "eslint",
     "db:seed": "tsx scripts/seed.ts",
     "db:seed:firebase": "tsx scripts/seed-firebase.ts",
+    "db:seed:firebase:categories": "tsx scripts/seed-firebase-categories-and-donasi.ts",
     "db:reset": "rm -rf data/donasiku.db data/donasiku.db-wal data/donasiku.db-shm && npm run db:seed"
   },
   "dependencies": {

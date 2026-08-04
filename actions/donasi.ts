@@ -99,6 +99,11 @@ export async function submitBarangAction(
   redirect(`/riwayat/barang/${item.id}`);
 }
 
+import { getProgramByIdUnified } from "@/lib/unified-repo";
+import { getFirebaseDonationMoneyById, incrementFirebaseCollectedAmount } from "@/lib/firebase-repo";
+import { randomUUID } from "node:crypto";
+import { DonationMoney, PaymentMethod, Certificate } from "@/lib/types";
+
 export async function submitUangAction(
   _prevState: ActionState,
   formData: FormData
@@ -116,53 +121,96 @@ export async function submitUangAction(
     amount: formData.get("amount"),
     method: formData.get("method"),
     isAnonymous: formData.get("isAnonymous") === "on",
+    pesan: formData.get("pesan") || "semoga berkah",
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Data tidak valid" };
   }
 
-  // Simpan ke SQLite (lokal)
-  const money = createDonationMoney({
+  // Generate ID and create DonationMoney object
+  const moneyId = randomUUID();
+  const money: DonationMoney = {
+    id: moneyId,
     donorId: user.id,
     programId: parsed.data.programId ?? null,
     amount: parsed.data.amount,
-    method: parsed.data.method,
+    method: parsed.data.method as PaymentMethod,
+    paymentStatus: "MENUNGGU",
+    paymentRef: null,
     isAnonymous: parsed.data.isAnonymous ?? false,
-  });
+    pesan: parsed.data.pesan,
+    createdAt: new Date().toISOString(),
+  };
+
+  const program = parsed.data.programId ? await getProgramByIdUnified(parsed.data.programId) : null;
 
   // 🔥 Simpan ke Firebase Firestore
-  await syncDonationMoneyToFirestore(money);
+  await syncDonationMoneyToFirestore(money, {
+    donorName: user.name,
+    programNama: program ? program.title : "Donasi umum DonasiKu",
+    pesan: money.pesan,
+  });
 
   redirect(`/donasi/uang/${parsed.data.programId ?? "umum"}/bayar?id=${money.id}`);
 }
+
+import { revalidatePath } from "next/cache";
 
 /** Simulasi callback/webhook payment gateway (Midtrans/Xendit) — lihat PRD Bab 9.6. */
 export async function confirmPaymentAction(moneyId: string): Promise<void> {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const money = getDonationMoneyById(moneyId);
+  const money = await getFirebaseDonationMoneyById(moneyId);
   if (!money || money.donorId !== user.id) redirect("/riwayat");
 
-  markPaymentStatus(money.id, "BERHASIL", `DEMO-${Date.now()}`);
-  if (money.programId) {
-    incrementCollectedAmount(money.programId, money.amount);
+  const updatedMoney: DonationMoney = {
+    ...money,
+    paymentStatus: "BERHASIL",
+    paymentRef: `DEMO-${Date.now()}`,
+  };
+
+  if (updatedMoney.programId) {
+    await incrementFirebaseCollectedAmount(updatedMoney.programId, updatedMoney.amount);
+    revalidatePath(`/program/${updatedMoney.programId}`);
   }
+  revalidatePath("/");
+  revalidatePath("/jelajah");
+  revalidatePath("/riwayat");
 
   const certNo = generateCertificateNumber();
-  const cert = createCertificate({ certificateNo: certNo, donorId: user.id, donationMoneyId: money.id });
+  const cert: Certificate = {
+    id: randomUUID(),
+    certificateNo: certNo,
+    donorId: user.id,
+    donationItemId: null,
+    donationMoneyId: updatedMoney.id,
+    issuedAt: new Date().toISOString(),
+  };
 
   // 🔥 Simpan sertifikat ke Firestore
   await syncCertificateToFirestore(cert);
 
-  const program = money.programId ? getProgramById(money.programId) : null;
-  createNotification({
-    userId: user.id,
-    type: "pembayaran",
-    message: `Donasi uang sebesar Rp${money.amount.toLocaleString("id-ID")}${
-      program ? ` untuk program "${program.title}"` : ""
-    } berhasil dikonfirmasi. Sertifikat sudah tersedia.`,
+  const program = updatedMoney.programId ? await getProgramByIdUnified(updatedMoney.programId) : null;
+
+  // 🔥 Update status donasi uang di Firestore (agar jadi "Berhasil")
+  await syncDonationMoneyToFirestore(updatedMoney, {
+    donorName: user.name,
+    programNama: program ? program.title : "Donasi umum DonasiKu",
+    pesan: updatedMoney.pesan || "semoga berkah",
   });
+  
+  try {
+    createNotification({
+      userId: user.id,
+      type: "pembayaran",
+      message: `Donasi uang sebesar Rp${money.amount.toLocaleString("id-ID")}${
+        program ? ` untuk program "${program.title}"` : ""
+      } berhasil dikonfirmasi. Sertifikat sudah tersedia.`,
+    });
+  } catch (e) {
+    console.warn("Local notification insert skipped:", e);
+  }
 
   // 🔥 Simpan notifikasi ke Firestore
   await syncNotificationToFirestore({

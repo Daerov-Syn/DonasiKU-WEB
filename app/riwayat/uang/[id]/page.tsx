@@ -2,11 +2,8 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Award, Landmark, QrCode } from "lucide-react";
 import { getCurrentUser } from "@/lib/session";
-import {
-  getDonationMoneyById,
-  getProgramWithMitra,
-  getCertificateByDonationMoney,
-} from "@/lib/repo";
+import { getFirebaseDonationMoneyById, getFirebaseCertificateByDonationMoneyId } from "@/lib/firebase-repo";
+import { getProgramByIdUnified } from "@/lib/unified-repo";
 import { PaymentStatusBadge } from "@/components/StatusBadge";
 
 function formatDateTime(iso: string): string {
@@ -29,11 +26,11 @@ export default async function RiwayatUangDetailPage({
   if (!user) redirect("/login");
 
   const { id } = await params;
-  const money = getDonationMoneyById(id);
+  const money = await getFirebaseDonationMoneyById(id);
   if (!money || money.donorId !== user.id) notFound();
 
-  const program = money.programId ? getProgramWithMitra(money.programId) : null;
-  const certificate = getCertificateByDonationMoney(money.id);
+  const program = money.programId ? await getProgramByIdUnified(money.programId) : null;
+  const certificate = await getFirebaseCertificateByDonationMoneyId(money.id);
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-10">

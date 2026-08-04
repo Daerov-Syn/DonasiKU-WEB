@@ -221,6 +221,32 @@ export function getUserById(id: string): User | null {
 }
 
 export function upsertUser(user: User): User {
+  // Check if a user with the same email already exists under a different id
+  const existingByEmail = getUserByEmail(user.email);
+  if (existingByEmail && existingByEmail.id !== user.id) {
+    // Update the existing user row instead of inserting a duplicate email
+    db.prepare(
+      `UPDATE users SET
+         name = ?, phone = ?, address = ?, latitude = ?, longitude = ?,
+         avatar_url = ?, role = ?, email_verified = ?,
+         notify_email = ?, notify_inapp = ?, updated_at = datetime('now')
+       WHERE id = ?`
+    ).run(
+      user.name,
+      user.phone ?? null,
+      user.address ?? null,
+      user.latitude ?? null,
+      user.longitude ?? null,
+      user.avatarUrl ?? null,
+      user.role || "DONATUR",
+      user.emailVerified ? 1 : 0,
+      user.notifyEmail ? 1 : 0,
+      user.notifyInapp ? 1 : 0,
+      existingByEmail.id
+    );
+    return getUserById(existingByEmail.id)!;
+  }
+
   db.prepare(
     `INSERT INTO users (id, name, email, password_hash, phone, address, latitude, longitude, avatar_url, role, email_verified, notify_email, notify_inapp, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)

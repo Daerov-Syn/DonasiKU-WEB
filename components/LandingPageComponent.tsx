@@ -16,7 +16,6 @@ import {
   Box,
   BarChart3,
   ShieldCheck,
-  Star,
   Shirt,
   Wheat,
   BookOpen,
@@ -154,11 +153,7 @@ export default function LandingPageComponent() {
         <div className="grid gap-10 lg:grid-cols-12 lg:items-center">
           {/* Left Column */}
           <div className="space-y-6 lg:col-span-7">
-            {/* Top Pill Badge */}
-            <div className="inline-flex items-center gap-2 rounded-full border border-purple-200/80 bg-purple-50/80 px-4 py-1.5 text-xs font-bold text-purple-700 shadow-xs">
-              <Sparkles size={14} className="text-purple-600 fill-purple-600" />
-              <span>#1 Platform Penyaluran Barang Layak Pakai &amp; Sembako</span>
-            </div>
+
 
             {/* Headline */}
             <h1 className="font-display text-4xl font-extrabold leading-[1.15] tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
@@ -188,47 +183,7 @@ export default function LandingPageComponent() {
               </Link>
             </div>
 
-            {/* Trust Element / Social Proof */}
-            <div className="flex items-center gap-4 pt-4 border-t border-slate-100">
-              <div className="flex -space-x-2 overflow-hidden">
-                <Image
-                  width={36}
-                  height={36}
-                  className="inline-block h-9 w-9 rounded-full ring-2 ring-white object-cover"
-                  src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80"
-                  alt="Donatur 1"
-                />
-                <Image
-                  width={36}
-                  height={36}
-                  className="inline-block h-9 w-9 rounded-full ring-2 ring-white object-cover"
-                  src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=120&q=80"
-                  alt="Donatur 2"
-                />
-                <Image
-                  width={36}
-                  height={36}
-                  className="inline-block h-9 w-9 rounded-full ring-2 ring-white object-cover"
-                  src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80"
-                  alt="Donatur 3"
-                />
-                <span className="flex h-9 w-9 items-center justify-center rounded-full bg-purple-600 text-[11px] font-bold text-white ring-2 ring-white">
-                  +1.2k
-                </span>
-              </div>
 
-              <div>
-                <div className="flex items-center gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} size={14} className="fill-amber-400 text-amber-400" />
-                  ))}
-                  <span className="ml-1 text-sm font-bold text-slate-900">4.9/5</span>
-                </div>
-                <p className="text-xs text-slate-500 font-medium">
-                  Dipercaya oleh 1,200+ Donatur di Surabaya
-                </p>
-              </div>
-            </div>
           </div>
 
           {/* Right Column: Phone Interactive Mockup Frame */}

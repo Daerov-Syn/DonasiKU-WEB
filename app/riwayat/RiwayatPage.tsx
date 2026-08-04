@@ -113,7 +113,7 @@ export default async function RiwayatPage({
 
         {activeTab === "uang" &&
           (moneys.length === 0 ? (
-            <EmptyState text="Anda belum melakukan donasi uang." href="/donasi/uang/umum" cta="Donasi uang sekarang" />
+            <EmptyState text="Anda belum melakukan donasi uang." href="/beranda?type=UANG" cta="Donasi uang sekarang" />
           ) : (
             moneys.map((money) => {
               const programTitle = money.programId

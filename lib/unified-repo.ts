@@ -29,13 +29,10 @@ import {
 } from "@/lib/firebase-repo";
 import {
   FALLBACK_CATEGORIES,
-  FALLBACK_PROGRAMS,
   FALLBACK_MITRAS,
   FALLBACK_STATS,
   FALLBACK_WEEKLY_TREND,
   FALLBACK_STORIES,
-  getFallbackProgramCards,
-  type FallbackProgramCardData,
   type FallbackAggregateStats,
   type FallbackWeeklyTrendPoint,
 } from "@/lib/hardcoded-data";
@@ -83,95 +80,55 @@ export async function getActivePrograms(filter?: {
 }): Promise<UnifiedProgramCardData[]> {
   try {
     const fbPrograms = await listFirebaseActivePrograms(filter);
-    if (fbPrograms && fbPrograms.length > 0) {
-      // Enrich with mitra data from Firestore or fallback
-      const enriched: UnifiedProgramCardData[] = await Promise.all(
-        fbPrograms.map(async (p) => {
-          let mitraName = "Mitra DonasiKu";
-          let mitraOrgType = "Organisasi Sosial";
-          let mitraAddress = "Surabaya";
+    
+    // Enrich with mitra data from Firestore
+    const enriched: UnifiedProgramCardData[] = await Promise.all(
+      fbPrograms.map(async (p) => {
+        let mitraName = "Mitra DonasiKu";
+        let mitraOrgType = "Organisasi Sosial";
+        let mitraAddress = "Surabaya";
 
-          // Try to get mitra info from fallback data
-          const fallbackMitra = FALLBACK_MITRAS.find(
-            (m) => m.id === p.mitraId
+        try {
+          const mitraQuery = query(
+            collection(firestoreDb, "mitra_profiles"),
+            where("__name__", "==", p.mitraId)
           );
-          if (fallbackMitra) {
-            mitraName = fallbackMitra.orgName;
-            mitraOrgType = fallbackMitra.orgType;
-            mitraAddress = fallbackMitra.address;
-          } else {
-            // Try Firestore mitra_profiles collection
-            try {
-              const mitraQuery = query(
-                collection(firestoreDb, "mitra_profiles"),
-                where("__name__", "==", p.mitraId)
-              );
-              const mitraSnap = await getDocs(mitraQuery);
-              if (!mitraSnap.empty) {
-                const md = mitraSnap.docs[0].data();
-                mitraName = md.orgName || md.org_name || md.nama_organisasi || mitraName;
-                mitraOrgType = md.orgType || md.org_type || md.tipe_organisasi || mitraOrgType;
-                mitraAddress = md.address || md.alamat || mitraAddress;
-              }
-            } catch {
-              // silently ignore
-            }
+          const mitraSnap = await getDocs(mitraQuery);
+          if (!mitraSnap.empty) {
+            const md = mitraSnap.docs[0].data();
+            mitraName = md.orgName || md.org_name || md.nama_organisasi || mitraName;
+            mitraOrgType = md.orgType || md.org_type || md.tipe_organisasi || mitraOrgType;
+            mitraAddress = md.address || md.alamat || mitraAddress;
           }
+        } catch {
+          // silently ignore
+        }
 
-          const fallbackProg = FALLBACK_PROGRAMS.find(
-            (fp) => fp.id === p.id || fp.title.toLowerCase() === p.title.toLowerCase()
-          );
-          const fallbackCard = fallbackProg
-            ? getFallbackProgramCards().find((f) => f.id === fallbackProg.id)
-            : null;
+        return {
+          ...p,
+          mitraName,
+          mitraOrgType,
+          mitraAddress,
+          neededCategoryNames: [],
+        };
+      })
+    );
 
-          return {
-            ...p,
-            type: fallbackProg?.type || p.type || "KEDUANYA",
-            targetAmount: p.targetAmount || fallbackProg?.targetAmount || 5000000,
-            collectedAmount: p.collectedAmount || fallbackProg?.collectedAmount || 1000000,
-            coverImageUrl: p.coverImageUrl || fallbackProg?.coverImageUrl || null,
-            mitraName: fallbackCard?.mitraName || mitraName,
-            mitraOrgType: fallbackCard?.mitraOrgType || mitraOrgType,
-            mitraAddress: fallbackCard?.mitraAddress || mitraAddress,
-            neededCategoryNames: fallbackCard?.neededCategoryNames || [],
-          };
-        })
+    let result = enriched.filter((p) => Boolean(p.coverImageUrl && p.coverImageUrl.trim() !== ""));
+    if (filter?.search) {
+      const q = filter.search.toLowerCase();
+      result = result.filter(
+        (p) =>
+          p.title.toLowerCase().includes(q) ||
+          p.mitraName.toLowerCase().includes(q)
       );
-
-      // Apply client-side filters
-      let result = enriched;
-      if (filter?.search) {
-        const q = filter.search.toLowerCase();
-        result = result.filter(
-          (p) =>
-            p.title.toLowerCase().includes(q) ||
-            p.mitraName.toLowerCase().includes(q)
-        );
-      }
-
-      return result;
     }
+
+    return result;
   } catch (e) {
     console.warn("[unified-repo] Firestore programs unavailable:", e);
+    return [];
   }
-
-  // Fallback to hardcoded
-  let fallback = getFallbackProgramCards();
-  if (filter?.type) {
-    fallback = fallback.filter(
-      (p) => p.type === filter.type || p.type === "KEDUANYA"
-    );
-  }
-  if (filter?.search) {
-    const q = filter.search.toLowerCase();
-    fallback = fallback.filter(
-      (p) =>
-        p.title.toLowerCase().includes(q) ||
-        p.mitraName.toLowerCase().includes(q)
-    );
-  }
-  return fallback;
 }
 
 // ================================================================
@@ -182,50 +139,44 @@ export async function getProgramByIdUnified(
 ): Promise<(Program & { mitra: MitraProfile }) | null> {
   try {
     const fbProgram = await getFirebaseProgramById(id);
-    if (fbProgram) {
-      // Try to find mitra
-      const fallbackMitra = FALLBACK_MITRAS.find(
-        (m) => m.id === fbProgram.mitraId
+    if (!fbProgram) return null;
+
+    let mitra: MitraProfile = {
+      id: fbProgram.mitraId,
+      userId: "",
+      orgName: "Mitra DonasiKu",
+      orgType: "Organisasi Sosial",
+      description: "Mitra terverifikasi DonasiKu",
+      legalDocsUrl: null,
+      verified: true,
+      latitude: -7.25,
+      longitude: 112.75,
+      address: "Surabaya",
+      createdAt: new Date().toISOString(),
+    };
+
+    try {
+      const mitraQuery = query(
+        collection(firestoreDb, "mitra_profiles"),
+        where("__name__", "==", fbProgram.mitraId)
       );
-      const mitra: MitraProfile = fallbackMitra ?? {
-        id: fbProgram.mitraId,
-        userId: "",
-        orgName: "Mitra DonasiKu",
-        orgType: "Organisasi Sosial",
-        description: "Mitra terverifikasi DonasiKu",
-        legalDocsUrl: null,
-        verified: true,
-        latitude: -7.25,
-        longitude: 112.75,
-        address: "Surabaya",
-        createdAt: new Date().toISOString(),
-      };
-      return { ...fbProgram, mitra };
+      const mitraSnap = await getDocs(mitraQuery);
+      if (!mitraSnap.empty) {
+        const md = mitraSnap.docs[0].data();
+        mitra.orgName = md.orgName || md.org_name || md.nama_organisasi || mitra.orgName;
+        mitra.orgType = md.orgType || md.org_type || md.tipe_organisasi || mitra.orgType;
+        mitra.address = md.address || md.alamat || mitra.address;
+        mitra.description = md.description || md.deskripsi || mitra.description;
+      }
+    } catch {
+      // silently ignore
     }
+
+    return { ...fbProgram, mitra };
   } catch (e) {
     console.warn("[unified-repo] Firestore program by id unavailable:", e);
+    return null;
   }
-
-  // Fallback to hardcoded
-  const fallbackProgram = FALLBACK_PROGRAMS.find((p) => p.id === id);
-  if (!fallbackProgram) return null;
-
-  const fallbackMitra = FALLBACK_MITRAS.find(
-    (m) => m.id === fallbackProgram.mitraId
-  ) ?? {
-    id: fallbackProgram.mitraId,
-    userId: "",
-    orgName: "Mitra DonasiKu",
-    orgType: "Organisasi Sosial",
-    description: "Mitra terverifikasi DonasiKu",
-    legalDocsUrl: null,
-    verified: true,
-    latitude: -7.25,
-    longitude: 112.75,
-    address: "Surabaya",
-    createdAt: new Date().toISOString(),
-  };
-  return { ...fallbackProgram, mitra: fallbackMitra };
 }
 
 // ================================================================
@@ -456,5 +407,5 @@ export async function getProgramByIdSimple(
   } catch {
     // fallthrough
   }
-  return FALLBACK_PROGRAMS.find((p) => p.id === id) ?? null;
+  return null;
 }

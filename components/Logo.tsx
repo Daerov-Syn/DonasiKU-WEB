@@ -35,14 +35,9 @@ export default function Logo({ showSubtitle = true, className = "", size = "md" 
         <HandHeart className={`${iconSizes[size]} stroke-[2.2]`} />
       </span>
       <div>
-        <div className="flex items-center gap-1.5">
-          <span className={`font-display ${textSizes[size]} font-black tracking-tight text-slate-900`}>
-            Donasi <span className="text-purple-600">Ku</span>
-          </span>
-          <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-extrabold text-purple-700 tracking-wider">
-            ZERO WASTE
-          </span>
-        </div>
+        <span className={`font-display ${textSizes[size]} font-black tracking-tight text-slate-900`}>
+          Donasi <span className="text-purple-600">Ku</span>
+        </span>
         {showSubtitle && (
           <p className="text-[10px] font-medium text-slate-400 leading-none mt-0.5">
             Crowdfunding &amp; Re-Use Platform

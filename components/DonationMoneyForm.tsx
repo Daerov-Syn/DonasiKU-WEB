@@ -74,6 +74,18 @@ export default function DonationMoneyForm({ programId }: { programId?: string })
         </div>
       </div>
 
+      <div>
+        <label className="mb-2 block text-sm font-medium text-brand-ink">
+          Pesan / Doa (Opsional)
+        </label>
+        <textarea
+          name="pesan"
+          rows={3}
+          placeholder="Tulis pesan atau doa (contoh: semoga berkah)"
+          className="w-full rounded-xl border border-brand-line p-3 text-sm outline-none focus:border-brand-forest focus:ring-2 focus:ring-brand-forest/20"
+        />
+      </div>
+
       <label className="flex items-center gap-2.5 text-sm text-brand-ink-soft">
         <input type="checkbox" name="isAnonymous" className="h-4 w-4 rounded border-brand-line" />
         Sembunyikan nama saya (donasi anonim)

@@ -1,8 +1,9 @@
 import { notFound, redirect } from "next/navigation";
 import { QrCode, Landmark, ShieldCheck } from "lucide-react";
 import { getCurrentUser } from "@/lib/session";
-import { getDonationMoneyById, getProgramById } from "@/lib/repo";
 import { confirmPaymentAction } from "@/actions/donasi";
+import { getFirebaseDonationMoneyById } from "@/lib/firebase-repo";
+import { getProgramByIdUnified } from "@/lib/unified-repo";
 import SubmitButton from "@/components/SubmitButton";
 
 export default async function BayarPage({
@@ -15,14 +16,15 @@ export default async function BayarPage({
 
   const { id } = await searchParams;
   if (!id) notFound();
-  const money = getDonationMoneyById(id);
+  
+  const money = await getFirebaseDonationMoneyById(id);
   if (!money || money.donorId !== user.id) notFound();
 
   if (money.paymentStatus === "BERHASIL") {
     redirect(`/riwayat/uang/${money.id}`);
   }
 
-  const program = money.programId ? getProgramById(money.programId) : null;
+  const program = money.programId ? await getProgramByIdUnified(money.programId) : null;
   const boundConfirm = confirmPaymentAction.bind(null, money.id);
 
   return (

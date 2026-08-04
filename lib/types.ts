@@ -119,6 +119,7 @@ export interface DonationMoney {
   paymentStatus: PaymentStatus;
   paymentRef: string | null;
   isAnonymous: boolean;
+  pesan?: string;
   createdAt: string;
 }
 

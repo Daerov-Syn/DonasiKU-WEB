@@ -42,7 +42,7 @@ const FAQ_ITEMS: FaqDetail[] = [
     icon: <Banknote size={20} />,
     iconBg: "bg-emerald-100",
     iconColor: "text-emerald-600",
-    actionUrl: "/donasi/uang/umum",
+    actionUrl: "/beranda?type=UANG",
     actionText: "Donasi Uang Sekarang",
   },
   {

@@ -18,12 +18,15 @@ import type {
 // CATEGORIES (Fallback)
 // ================================================================
 export const FALLBACK_CATEGORIES: Category[] = [
-  { id: "cat-pakaian", name: "Pakaian & Tekstil", icon: "👕" },
-  { id: "cat-sembako", name: "Sembako & Pangan", icon: "🌾" },
-  { id: "cat-pendidikan", name: "Pendidikan & Alat Tulis", icon: "📚" },
-  { id: "cat-elektronik", name: "Elektronik & Peralatan", icon: "🔌" },
-  { id: "cat-kesehatan", name: "Kesehatan & Medis", icon: "🏥" },
-  { id: "cat-mainan", name: "Mainan & Permainan", icon: "🧸" },
+  { id: "cat-pakaian-tekstil", name: "Pakaian & Tekstil", icon: "👕" },
+  { id: "cat-sembako-pangan", name: "Sembako & Pangan", icon: "🌾" },
+  { id: "cat-pendidikan-alat-tulis", name: "Pendidikan & Alat Tulis", icon: "📚" },
+  { id: "cat-elektronik", name: "Elektronik", icon: "🔌" },
+  { id: "cat-kesehatan-medis", name: "Kesehatan & Medis", icon: "🏥" },
+  { id: "cat-mainan-permainan", name: "Mainan & Permainan", icon: "🧸" },
+  { id: "cat-furnitur", name: "Furnitur", icon: "🪑" },
+  { id: "cat-perlengkapan-sekolah", name: "Perlengkapan Sekolah", icon: "🎒" },
+  { id: "cat-peralatan-rumah-tangga", name: "Peralatan Rumah Tangga", icon: "🏠" },
 ];
 
 // ================================================================
