@@ -1,20 +1,72 @@
 /**
  * API Route: /api/sync-programs
  * 
- * Sinkronisasi program donasi dari hardcoded fallback data ke Firestore.
- * Menyimpan semua program dengan gambar cover dan data yang sesuai.
+ * Sinkronisasi program donasi, kategori, dan profil mitra dari hardcoded fallback data ke Firestore.
+ * Menyimpan semua data dengan gambar cover dan data yang sesuai agar Vercel/Produksi langsung memiliki data lengkap.
  * 
- * Method: POST
+ * Method: POST / GET
  */
 import { NextResponse } from "next/server";
 import { doc, setDoc } from "firebase/firestore";
 import { db as firestoreDb } from "@/lib/firebase";
-import { FALLBACK_PROGRAMS } from "@/lib/hardcoded-data";
+import { FALLBACK_PROGRAMS, FALLBACK_MITRAS, FALLBACK_CATEGORIES } from "@/lib/hardcoded-data";
 
-export async function POST() {
-
+async function doSync() {
   const results: { id: string; title: string; status: string }[] = [];
 
+  // 1. Sync Categories
+  for (const cat of FALLBACK_CATEGORIES) {
+    try {
+      const ref = doc(firestoreDb, "categories", cat.id);
+      await setDoc(
+        ref,
+        {
+          id: cat.id,
+          name: cat.name,
+          nama: cat.name,
+          icon: cat.icon,
+        },
+        { merge: true }
+      );
+    } catch {
+      // ignore
+    }
+  }
+
+  // 2. Sync Mitra Profiles
+  for (const mitra of FALLBACK_MITRAS) {
+    try {
+      const ref = doc(firestoreDb, "mitra_profiles", mitra.id);
+      await setDoc(
+        ref,
+        {
+          id: mitra.id,
+          userId: mitra.userId,
+          orgName: mitra.orgName,
+          orgType: mitra.orgType,
+          description: mitra.description,
+          verified: mitra.verified,
+          latitude: mitra.latitude,
+          longitude: mitra.longitude,
+          address: mitra.address,
+          createdAt: mitra.createdAt,
+          // Mobile format
+          user_id: mitra.userId,
+          org_name: mitra.orgName,
+          nama_organisasi: mitra.orgName,
+          org_type: mitra.orgType,
+          tipe_organisasi: mitra.orgType,
+          deskripsi: mitra.description,
+          alamat: mitra.address,
+        },
+        { merge: true }
+      );
+    } catch {
+      // ignore
+    }
+  }
+
+  // 3. Sync Programs
   for (const program of FALLBACK_PROGRAMS) {
     try {
       const ref = doc(firestoreDb, "programs", program.id);
@@ -53,8 +105,18 @@ export async function POST() {
     }
   }
 
-  return NextResponse.json({
-    message: `Sinkronisasi selesai. ${results.filter((r) => r.status === "synced").length}/${FALLBACK_PROGRAMS.length} program berhasil disimpan ke Firestore.`,
+  return {
+    message: `Sinkronisasi selesai. Kategori, Mitra Profiles, dan ${results.filter((r) => r.status === "synced").length}/${FALLBACK_PROGRAMS.length} program berhasil disimpan ke Firestore.`,
     results,
-  });
+  };
+}
+
+export async function POST() {
+  const res = await doSync();
+  return NextResponse.json(res);
+}
+
+export async function GET() {
+  const res = await doSync();
+  return NextResponse.json(res);
 }

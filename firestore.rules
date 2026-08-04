@@ -2,58 +2,60 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // === USERS COLLECTION ===
+    // 1. Data User
     match /users/{userId} {
-      allow read: if true;
-      allow write: if true;
-    }
-
-    // === KATEGORI BARANG ===
-    match /categories/{categoryId} {
       allow read, write: if true;
     }
 
-    // === PROGRAM KAMPANYE ===
+    // 2. Program Kampanye & Kategori
     match /programs/{programId} {
       allow read, write: if true;
     }
 
-    // === MITRA & POSKO PROFILES ===
-    match /mitra_profiles/{mitraId} {
+    match /categories/{categoryId} {
       allow read, write: if true;
     }
 
-    // === BARANG DONASI (Donation Items) ===
+    // 3. Profil Mitra
+    match /mitra_profiles/{document=**} {
+      allow read, write: if true;
+    }
+
+    // 4. Donasi Barang & Donasi Uang
     match /donation_items/{itemId} {
       allow read, write: if true;
     }
 
-    // === DONASI DANA (Donation Money) ===
     match /donation_money/{moneyId} {
       allow read, write: if true;
     }
 
-    // === DONASI DANA MOBILE ===
     match /donasiDana/{moneyId} {
       allow read, write: if true;
     }
 
-    // === SERTIFIKAT DONASI ===
+    match /donatur_dana/{document=**} {
+      allow read, write: if true;
+    }
+
+    // 5. Sertifikat Donasi
     match /certificates/{certId} {
       allow read, write: if true;
     }
 
-    // === KISAH DAMPAK (Impact Stories) ===
+    // 6. Data Notifikasi, Impact Stories, & FAQ
+    match /notifikasi/{document=**} {
+      allow read, write: if true;
+    }
+
+    match /notifications/{document=**} {
+      allow read, write: if true;
+    }
+
     match /impact_stories/{storyId} {
       allow read, write: if true;
     }
 
-    // === NOTIFIKASI ===
-    match /notifications/{notifId} {
-      allow read, write: if true;
-    }
-
-    // === FAQ ===
     match /faq_items/{faqId} {
       allow read, write: if true;
     }
