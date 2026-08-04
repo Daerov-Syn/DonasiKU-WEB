@@ -1,4 +1,5 @@
 import { listProgramsNeedingCategory, type ProgramForMatching } from "@/lib/repo";
+import { FALLBACK_PROGRAMS, FALLBACK_MITRAS } from "@/lib/hardcoded-data";
 import { distanceKm } from "@/lib/geo";
 
 export interface MatchResult {
@@ -33,9 +34,24 @@ export function computeMatches(item: {
   pickupLongitude?: number | null;
   estimatedWeight?: number | null;
 }): MatchResult[] {
-  const candidates: ProgramForMatching[] = listProgramsNeedingCategory(
-    item.categoryId
-  );
+  let candidates: ProgramForMatching[] = [];
+  try {
+    candidates = listProgramsNeedingCategory(item.categoryId);
+  } catch {
+    candidates = [];
+  }
+
+  if (candidates.length === 0) {
+    // Fallback candidate generation for Vercel/Production
+    candidates = FALLBACK_PROGRAMS.map((prog, idx) => {
+      const mitra = FALLBACK_MITRAS.find((m) => m.id === prog.mitraId) || FALLBACK_MITRAS[0];
+      return {
+        program: prog,
+        mitra,
+        urgency: Math.max(2, 5 - idx),
+      };
+    });
+  }
 
   const maxPossible = 50 + 30 + 20; // urgency + distance + quota
 

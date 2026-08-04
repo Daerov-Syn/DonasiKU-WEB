@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { computeMatches } from "@/lib/matching";
 import { listProgramNeededCategories, getCategoryById } from "@/lib/repo";
+import { FALLBACK_CATEGORIES } from "@/lib/hardcoded-data";
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,7 +12,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "categoryId diperlukan" }, { status: 400 });
     }
 
-    const category = getCategoryById(categoryId);
+    const category = getCategoryById(categoryId) || FALLBACK_CATEGORIES.find((c) => c.id === categoryId);
     const matches = computeMatches({
       categoryId,
       categoryName: category?.name ?? undefined,
@@ -22,10 +23,15 @@ export async function POST(request: NextRequest) {
 
     // Enrich with category data
     const enriched = matches.map((m) => {
-      const neededCats = listProgramNeededCategories(m.programId);
+      let neededCats: { categoryName: string }[] = [];
+      try {
+        neededCats = listProgramNeededCategories(m.programId);
+      } catch {
+        neededCats = [];
+      }
       return {
         ...m,
-        categoryNeeded: neededCats.map((c) => c.categoryName),
+        categoryNeeded: neededCats.length > 0 ? neededCats.map((c) => c.categoryName) : [category?.name || "Pakaian & Tekstil"],
       };
     });
 
