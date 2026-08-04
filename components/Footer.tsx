@@ -62,7 +62,6 @@ export default function Footer() {
 
         <div className="mt-10 flex flex-col gap-2 border-t border-slate-100 pt-6 text-xs font-medium text-slate-400 sm:flex-row sm:items-center sm:justify-between">
           <p>&copy; {new Date().getFullYear()} DonasiKu Zero Waste Platform. All rights reserved.</p>
-          <p>Dibuat dengan ❤️ di Surabaya</p>
         </div>
       </div>
     </footer>

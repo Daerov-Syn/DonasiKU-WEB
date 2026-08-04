@@ -16,38 +16,35 @@ export interface ImpactStoryData {
 const DEFAULT_STORIES: ImpactStoryData[] = [
   {
     id: "story-1",
-    badge: "Yayasan Kepedulian",
-    title: "1.200 Paket Sembako Tiba di Yayasan Kepedulian",
+    badge: "Posko Wonokromo",
+    title: "Penyaluran Parcel Sembako & Kebutuhan Harian Lansia",
     summary:
-      "Tim relawan berhasil mendistribusikan 1.200 paket ke 6 dusun. Setiap paket berisi beras, minyak, dan perlengkapan pokok layak pakai.",
-    imageUrl:
-      "https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=1000&q=80",
+      "Tim relawan mendistribusikan paket sembako dan bahan pokok harian untuk puluhan lansia dhuafa penerima manfaat.",
+    imageUrl: "/program/parcel-sembako-lansia.jpg",
     donorsCount: 348,
     beneficiariesCount: 1200,
     date: "12 Jan 2026",
   },
   {
     id: "story-2",
-    badge: "Panti Asuhan Kasih",
-    title: "30 Anak Dhuafa Terima Beasiswa & Peralatan Sekolah",
+    badge: "Panti Asuhan Assalafiyah",
+    title: "Anak Panti Terima Seragam & Pakaian Layak Pakai",
     summary:
-      "Seragam, tas sekolah, dan alat tulis layak pakai disalurkan langsung ke anak-anak panti untuk mendukung tahun ajaran baru.",
-    imageUrl:
-      "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=600&q=80",
+      "Seragam sekolah, pakaian harian, dan sepatu disalurkan langsung ke anak-anak panti untuk mendukung kegiatan sehari-hari.",
+    imageUrl: "/program/anak-panti-yatim.png",
     donorsCount: 124,
-    beneficiariesCount: 30,
+    beneficiariesCount: 50,
     date: "05 Jan 2026",
   },
   {
     id: "story-3",
-    badge: "Klinik Kemanusiaan 3T",
-    title: "Klinik 3T Terima Alat Kesehatan & Obat-obatan",
+    badge: "Rumah Belajar Pintar",
+    title: "Fasilitas Laptop & Perangkat Digital Pembelajaran Anak",
     summary:
-      "Peralatan medis dasar dan popok dewasa tiba di posko pelayanan kesehatan pedalaman untuk warga lansia.",
-    imageUrl:
-      "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=600&q=80",
+      "Perangkat laptop layak pakai dan sarana belajar diserahterimakan untuk kegiatan bimbingan belajar anak-anak kurang mampu.",
+    imageUrl: "/program/laptop-belajar.jpg",
     donorsCount: 96,
-    beneficiariesCount: 150,
+    beneficiariesCount: 60,
     date: "28 Des 2025",
   },
 ];
@@ -89,7 +86,8 @@ export default function ImpactStoriesSection({
             src={featuredStory.imageUrl}
             alt={featuredStory.title}
             fill
-            unoptimized
+            sizes="(max-width: 768px) 100vw, 80vw"
+            quality={85}
             className="object-cover transition-transform duration-500 group-hover:scale-105"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent" />
@@ -136,7 +134,8 @@ export default function ImpactStoriesSection({
                 src={story.imageUrl}
                 alt={story.title}
                 fill
-                unoptimized
+                sizes="(max-width: 640px) 100vw, 50vw"
+                quality={85}
                 className="object-cover transition-transform duration-500 group-hover:scale-105"
               />
               <div className="absolute left-3 top-3">

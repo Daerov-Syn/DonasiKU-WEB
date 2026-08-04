@@ -196,8 +196,10 @@ async function main() {
     mitraId: mitra1.id,
     title: "Pakaian Layak untuk Anak Panti",
     description:
-      "Kami membutuhkan pakaian anak usia 5-15 tahun yang masih layak pakai untuk 45 anak asuh kami, terutama seragam sekolah dan pakaian sehari-hari.",
-    type: "BARANG",
+      "Program pengumpulan pakaian layak pakai dan dana bantuan untuk anak-anak di panti asuhan. Kami membutuhkan seragam sekolah, pakaian harian, dan dana pendukung.",
+    type: "KEDUANYA",
+    targetAmount: 5_000_000,
+    coverImageUrl: "/program/anak-panti-yatim.png",
   });
   addProgramNeededCategory(prog1.id, categoryIds["Pakaian"], 5);
   addProgramNeededCategory(prog1.id, categoryIds["Perlengkapan Sekolah"], 3);
@@ -206,9 +208,10 @@ async function main() {
     mitraId: mitra2.id,
     title: "Kebutuhan Harian Lansia",
     description:
-      "Mendukung kebutuhan peralatan rumah tangga dan dana operasional harian untuk 30 lansia di Wisma Lansia Sejahtera.",
+      "Mendukung kebutuhan peralatan rumah tangga, sembako, dan dana operasional harian untuk 30 lansia di Wisma Lansia Sejahtera.",
     type: "KEDUANYA",
     targetAmount: 5_000_000,
+    coverImageUrl: "/program/parcel-sembako-lansia.jpg",
   });
   addProgramNeededCategory(prog2.id, categoryIds["Peralatan Rumah Tangga"], 4);
 
@@ -216,9 +219,10 @@ async function main() {
     mitraId: mitra3.id,
     title: "Buku & Beasiswa untuk Anak Jalanan",
     description:
-      "Menggalang buku bacaan, alat tulis, dan dana pendidikan untuk 60 anak binaan yayasan yang putus sekolah.",
+      "Menggalang buku bacaan, alat tulis, dan dana pendidikan untuk 60 anak binaan yayasan yang membutuhkan dukungan belajar.",
     type: "KEDUANYA",
     targetAmount: 10_000_000,
+    coverImageUrl: "/program/laptop-belajar.jpg",
   });
   addProgramNeededCategory(prog3.id, categoryIds["Buku & Alat Tulis"], 5);
   addProgramNeededCategory(prog3.id, categoryIds["Mainan Anak"], 2);
@@ -227,8 +231,10 @@ async function main() {
     mitraId: mitra1.id,
     title: "Elektronik untuk Ruang Belajar Panti",
     description:
-      "Membutuhkan perangkat elektronik (laptop/printer bekas layak pakai) untuk menunjang kegiatan belajar anak asuh.",
-    type: "BARANG",
+      "Membutuhkan perangkat elektronik (laptop/printer bekas layak pakai) dan dana pengadaan alat penunjang kegiatan belajar mengajar panti asuhan.",
+    type: "KEDUANYA",
+    targetAmount: 8_000_000,
+    coverImageUrl: "/program/hari-anak-sekolah.jpg",
   });
   addProgramNeededCategory(prog4.id, categoryIds["Elektronik"], 3);
 

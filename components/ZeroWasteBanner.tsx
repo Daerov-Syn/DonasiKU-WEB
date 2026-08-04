@@ -2,8 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { Bell, Leaf, Heart, Users, RefreshCw } from "lucide-react";
-import ImpactCalculatorModal from "@/components/ImpactCalculatorModal";
+
+const ImpactCalculatorModal = dynamic(
+  () => import("@/components/ImpactCalculatorModal"),
+  { ssr: false }
+);
 
 interface ZeroWasteBannerProps {
   userName?: string;

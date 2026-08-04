@@ -118,12 +118,23 @@ export async function getActivePrograms(filter?: {
             }
           }
 
+          const fallbackProg = FALLBACK_PROGRAMS.find(
+            (fp) => fp.id === p.id || fp.title.toLowerCase() === p.title.toLowerCase()
+          );
+          const fallbackCard = fallbackProg
+            ? getFallbackProgramCards().find((f) => f.id === fallbackProg.id)
+            : null;
+
           return {
             ...p,
-            mitraName,
-            mitraOrgType,
-            mitraAddress,
-            neededCategoryNames: [],
+            type: fallbackProg?.type || p.type || "KEDUANYA",
+            targetAmount: p.targetAmount || fallbackProg?.targetAmount || 5000000,
+            collectedAmount: p.collectedAmount || fallbackProg?.collectedAmount || 1000000,
+            coverImageUrl: p.coverImageUrl || fallbackProg?.coverImageUrl || null,
+            mitraName: fallbackCard?.mitraName || mitraName,
+            mitraOrgType: fallbackCard?.mitraOrgType || mitraOrgType,
+            mitraAddress: fallbackCard?.mitraAddress || mitraAddress,
+            neededCategoryNames: fallbackCard?.neededCategoryNames || [],
           };
         })
       );

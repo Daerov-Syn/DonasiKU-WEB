@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { MapPin, Package, Wallet, ArrowLeft } from "lucide-react";
 import { getProgramByIdUnified } from "@/lib/unified-repo";
 
@@ -21,6 +22,16 @@ export default async function ProgramDetailPage({
       ? Math.min(100, Math.round((program.collectedAmount / program.targetAmount) * 100))
       : null;
 
+  const coverUrl =
+    program.coverImageUrl ||
+    (program.title.toLowerCase().includes("pakaian")
+      ? "/program/anak-panti-yatim.png"
+      : program.title.toLowerCase().includes("sembako") || program.title.toLowerCase().includes("lansia")
+      ? "/program/parcel-sembako-lansia.jpg"
+      : program.title.toLowerCase().includes("buku") || program.title.toLowerCase().includes("beasiswa")
+      ? "/program/laptop-belajar.jpg"
+      : "/program/hari-anak-sekolah.jpg");
+
   return (
     <div className="mx-auto max-w-4xl px-5 py-10">
       <Link
@@ -30,15 +41,16 @@ export default async function ProgramDetailPage({
         <ArrowLeft size={15} /> Kembali ke daftar program
       </Link>
 
-      <div className="mt-5 h-52 w-full overflow-hidden rounded-3xl bg-gradient-to-br from-brand-forest-light/30 via-brand-forest/20 to-brand-gold/20 sm:h-72">
-        {program.coverImageUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={program.coverImageUrl}
-            alt={program.title}
-            className="h-full w-full object-cover"
-          />
-        )}
+      <div className="relative mt-5 h-52 w-full overflow-hidden rounded-3xl bg-slate-100 sm:h-72">
+        <Image
+          src={coverUrl}
+          alt={program.title}
+          fill
+          priority
+          sizes="(max-width: 896px) 100vw, 896px"
+          quality={90}
+          className="object-cover"
+        />
       </div>
 
       <div className="mt-6 flex flex-wrap items-start justify-between gap-4">

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { MapPin, Package, Wallet, ArrowRight } from "lucide-react";
 import type { Program } from "@/lib/types";
 
@@ -14,23 +15,34 @@ function formatRupiah(n: number): string {
   return `Rp${n.toLocaleString("id-ID")}`;
 }
 
+function getFallbackCoverImage(title: string): string {
+  const t = (title || "").toLowerCase();
+  if (t.includes("pakaian")) return "/program/anak-panti-yatim.png";
+  if (t.includes("sembako") || t.includes("lansia") || t.includes("harian")) return "/program/parcel-sembako-lansia.jpg";
+  if (t.includes("buku") || t.includes("beasiswa") || t.includes("jalan")) return "/program/laptop-belajar.jpg";
+  if (t.includes("elektronik") || t.includes("sekolah") || t.includes("anak")) return "/program/hari-anak-sekolah.jpg";
+  return "/program/anak-panti-yatim.png";
+}
+
 export default function ProgramCard({ program }: { program: ProgramCardData }) {
   const progress =
     program.targetAmount && program.targetAmount > 0
       ? Math.min(100, Math.round((program.collectedAmount / program.targetAmount) * 100))
       : null;
 
+  const coverUrl = program.coverImageUrl || getFallbackCoverImage(program.title);
+
   return (
     <div className="group flex flex-col overflow-hidden rounded-3xl border border-brand-line bg-white shadow-sm transition-shadow hover:shadow-md">
-      <div className="relative h-36 w-full overflow-hidden bg-linear-to-br from-brand-forest-light/30 via-brand-forest/20 to-brand-gold/20">
-        {program.coverImageUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={program.coverImageUrl}
-            alt={program.title}
-            className="h-full w-full object-cover"
-          />
-        )}
+      <div className="relative h-44 w-full overflow-hidden bg-slate-100">
+        <Image
+          src={coverUrl}
+          alt={program.title}
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          quality={85}
+          className="object-cover transition-transform duration-300 group-hover:scale-105"
+        />
         <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/90 px-3 py-1 text-[11px] font-semibold text-brand-forest-dark shadow-sm">
           {program.type === "BARANG" && <Package size={12} />}
           {program.type === "UANG" && <Wallet size={12} />}

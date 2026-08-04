@@ -127,6 +127,13 @@ export default async function Header() {
                 </Link>
 
                 <Link
+                  href="/bantuan"
+                  className="block px-4 py-2 text-sm text-slate-700 hover:bg-purple-50 hover:text-purple-700 font-medium"
+                >
+                  Bantuan &amp; FAQ
+                </Link>
+
+                <Link
                   href="/donasi/uang/umum"
                   className="flex items-center gap-2 px-4 py-2 text-sm text-purple-700 hover:bg-purple-50 font-bold"
                 >

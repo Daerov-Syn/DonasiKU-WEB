@@ -21,6 +21,7 @@ import type {
   Notification,
   FaqItem,
 } from "@/lib/types";
+import { FALLBACK_PROGRAMS, FALLBACK_MITRAS } from "@/lib/hardcoded-data";
 
 /* ------------------------------------------------------------------ */
 /* Row mappers (snake_case kolom SQLite -> camelCase objek TS)         */
@@ -576,10 +577,28 @@ export function getProgramWithMitra(
   id: string
 ): (Program & { mitra: MitraProfile }) | null {
   const program = getProgramById(id);
-  if (!program) return null;
-  const mitra = getMitraProfileById(program.mitraId);
-  if (!mitra) return null;
-  return { ...program, mitra };
+  if (program) {
+    const mitra = getMitraProfileById(program.mitraId) || FALLBACK_MITRAS[0];
+    return { ...program, mitra };
+  }
+  const fallbackProg = FALLBACK_PROGRAMS.find((p) => p.id === id);
+  if (fallbackProg) {
+    const fallbackMitra = FALLBACK_MITRAS.find((m) => m.id === fallbackProg.mitraId) || {
+      id: fallbackProg.mitraId,
+      userId: "",
+      orgName: "Mitra DonasiKu",
+      orgType: "Organisasi Sosial",
+      description: "Mitra terverifikasi DonasiKu",
+      legalDocsUrl: null,
+      verified: true,
+      latitude: -7.25,
+      longitude: 112.75,
+      address: "Surabaya",
+      createdAt: new Date().toISOString(),
+    };
+    return { ...fallbackProg, mitra: fallbackMitra };
+  }
+  return null;
 }
 
 /* ------------------------------------------------------------------ */
