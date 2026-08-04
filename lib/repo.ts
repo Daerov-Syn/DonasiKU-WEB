@@ -437,6 +437,26 @@ export function getCategoryById(id: string): Category | null {
   return row ? toCategory(row) : null;
 }
 
+export function ensureCategoryExists(id: string): Category {
+  let cat = getCategoryById(id);
+  if (cat) return cat;
+  
+  // Find from FALLBACK_CATEGORIES
+  const { FALLBACK_CATEGORIES } = require("./hardcoded-data");
+  const fallbackCat = FALLBACK_CATEGORIES.find((c: any) => c.id === id) || FALLBACK_CATEGORIES[0];
+  
+  try {
+    db.prepare(
+      "INSERT OR IGNORE INTO categories (id, name, icon) VALUES (?, ?, ?)"
+    ).run(fallbackCat.id, fallbackCat.name, fallbackCat.icon || null);
+    cat = getCategoryById(fallbackCat.id);
+  } catch (e) {
+    console.warn("[repo] Failed to ensure category exists:", e);
+  }
+  
+  return cat || fallbackCat;
+}
+
 /* ------------------------------------------------------------------ */
 /* Programs                                                             */
 /* ------------------------------------------------------------------ */

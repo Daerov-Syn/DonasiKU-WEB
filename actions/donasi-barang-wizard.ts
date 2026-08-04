@@ -9,8 +9,7 @@ import {
   createCertificate,
   getProgramById,
   getMitraProfileById,
-  getCategoryById,
-  listCategories,
+  ensureCategoryExists,
   upsertUser,
 } from "@/lib/repo";
 import {
@@ -58,30 +57,9 @@ export async function submitBarangWizardAction(
       return { error: "Pilih kategori barang terlebih dahulu." };
     }
 
-    // Validate categoryId — if from Firebase and not in SQLite, insert it
-    let validCategory = getCategoryById(categoryId);
-    if (!validCategory) {
-      // Try inserting the Firebase category into SQLite so FK constraint is satisfied
-      try {
-        const { db: sqliteDb } = await import("@/lib/db");
-        const catName = (formData.get("title") as string) || "Donasi Barang";
-        sqliteDb.prepare(
-          "INSERT OR IGNORE INTO categories (id, name, icon) VALUES (?, ?, ?)"
-        ).run(categoryId, catName, null);
-        validCategory = getCategoryById(categoryId);
-      } catch {
-        // fallback: use first available category
-      }
-      if (!validCategory) {
-        const allCategories = listCategories();
-        const fallbackCat = allCategories.find((c) => c.id === categoryId) || allCategories[0];
-        if (fallbackCat) {
-          categoryId = fallbackCat.id;
-        } else {
-          return { error: "Kategori barang tidak ditemukan di database." };
-        }
-      }
-    }
+    // Validate categoryId — insert from FALLBACK_CATEGORIES if not in SQLite
+    const validCategory = ensureCategoryExists(categoryId);
+    categoryId = validCategory.id;
 
     // Validate matchedProgramId in SQLite DB
     if (matchedProgramId) {
