@@ -1,3 +1,4 @@
+// Firestore Security Rules for DonasiKu Web & Mobile Cross-Platform Access
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
