@@ -413,6 +413,38 @@ export async function getCategoryByIdUnified(
 }
 
 // ================================================================
+// VERIFIED MITRA PROFILES (for wizard matching)
+// ================================================================
+export async function getVerifiedMitraProfilesUnified(): Promise<MitraProfile[]> {
+  try {
+    const qSnap = await getDocs(
+      query(collection(firestoreDb, "mitra_profiles"), where("verified", "==", true))
+    );
+    if (!qSnap.empty) {
+      return qSnap.docs.map((d) => {
+        const data = d.data();
+        return {
+          id: d.id,
+          userId: data.userId || data.user_id || "",
+          orgName: data.orgName || data.org_name || data.nama_organisasi || "",
+          orgType: data.orgType || data.org_type || data.tipe_organisasi || "",
+          description: data.description || data.deskripsi || null,
+          legalDocsUrl: data.legalDocsUrl || data.legal_docs_url || null,
+          verified: true,
+          latitude: data.latitude ?? -7.25,
+          longitude: data.longitude ?? 112.75,
+          address: data.address || data.alamat || "Surabaya",
+          createdAt: data.createdAt || data.created_at || new Date().toISOString(),
+        };
+      });
+    }
+  } catch (e) {
+    console.warn("[unified-repo] Firestore mitra_profiles unavailable:", e);
+  }
+  return FALLBACK_MITRAS;
+}
+
+// ================================================================
 // PROGRAM BY ID (simple, for riwayat enrichment)
 // ================================================================
 export async function getProgramByIdSimple(
