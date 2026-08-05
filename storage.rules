@@ -1,0 +1,38 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Aturan untuk folder donasi_barang (Tempat upload foto donasi)
+    match /donasi_barang/{fileName} {
+      allow read: if true;
+      allow write: if true; // Diubah menjadi true karena menggunakan custom auth (request.auth = null)
+    }
+
+    // Aturan untuk folder program_images (Tempat upload foto program)
+    match /program_images/{fileName} {
+      allow read: if true;
+      allow write: if true; // Diubah menjadi true karena menggunakan custom auth
+    }
+    
+    match /profile_photos/{fileName} {
+      allow read: if true;
+      allow write: if true; 
+    }
+
+    match /bukti_penyaluran/{fileName} {
+      allow read: if true;
+      allow write: if true; 
+    }
+
+    match /legalitas-mitra/{fileName} {
+      allow read: if true;
+      allow write: if true; 
+    }
+    
+    // Default fallback
+    match /{allPaths=**} {
+      allow read: if true;
+      allow write: if true;
+    }
+  }
+}
