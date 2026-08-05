@@ -31,15 +31,13 @@ export default async function ProgramDetailPage({
         <ArrowLeft size={15} /> Kembali ke daftar program
       </Link>
 
-      <div className="mt-5 h-52 w-full overflow-hidden rounded-3xl bg-gradient-to-br from-brand-forest-light/30 via-brand-forest/20 to-brand-gold/20 sm:h-72">
-        {program.coverImageUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={program.coverImageUrl}
-            alt={program.title}
-            className="h-full w-full object-cover"
-          />
-        )}
+      <div className="mt-5 h-52 w-full overflow-hidden rounded-3xl bg-slate-100 sm:h-72">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={program.coverImageUrl || "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=800&q=80"}
+          alt={program.title}
+          className="h-full w-full object-cover"
+        />
       </div>
 
       <div className="mt-6 flex flex-wrap items-start justify-between gap-4">
