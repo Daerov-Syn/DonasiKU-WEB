@@ -223,8 +223,12 @@ export async function saveFirebaseUser(user: User): Promise<void> {
 
 export async function getFirebaseMitraProfileByUserId(userId: string): Promise<MitraProfile | null> {
   try {
-    const q = query(collection(db, "mitra_profiles"), where("userId", "==", userId), limit(1));
-    const querySnap = await getDocs(q);
+    let q = query(collection(db, "mitra_profiles"), where("userId", "==", userId), limit(1));
+    let querySnap = await getDocs(q);
+    if (querySnap.empty) {
+      q = query(collection(db, "mitra_profiles"), where("user_id", "==", userId), limit(1));
+      querySnap = await getDocs(q);
+    }
     if (querySnap.empty) return null;
     const firstDoc = querySnap.docs[0]!;
     return mapFirestoreToMitra(firstDoc.id, firstDoc.data());

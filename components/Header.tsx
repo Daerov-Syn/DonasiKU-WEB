@@ -133,12 +133,29 @@ export default async function Header() {
                   Bantuan &amp; FAQ
                 </Link>
 
-                <Link
-                  href={user.roles.includes("MITRA") ? "/mitra/beranda" : "/mitra/daftar"}
-                  className="flex items-center gap-2 px-4 py-2 text-sm text-purple-700 hover:bg-purple-50 font-bold"
-                >
-                  <Building2 size={14} className="text-purple-600" /> {user.roles.includes("MITRA") ? "Dashboard Mitra" : "Daftar Mitra"}
-                </Link>
+                {!user.roles.includes("MITRA") && (
+                  <Link
+                    href="/mitra/daftar"
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-purple-700 hover:bg-purple-50 font-bold"
+                  >
+                    <Building2 size={14} className="text-purple-600" /> Daftar Sebagai Mitra
+                  </Link>
+                )}
+
+                {user.roles.includes("MITRA") && (
+                  <>
+                    <div className="my-1 border-t border-slate-100" />
+                    <div className="px-4 py-1 text-[10px] font-bold uppercase tracking-wider text-purple-600">
+                      Mitra Area
+                    </div>
+                    <Link
+                      href="/mitra/beranda"
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-purple-700 hover:bg-purple-50 font-bold"
+                    >
+                      <Building2 size={14} className="text-purple-600" /> Dashboard Mitra
+                    </Link>
+                  </>
+                )}
 
                 {user.roles.includes("ADMIN") && (
                   <>
@@ -163,21 +180,6 @@ export default async function Header() {
                       className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-purple-50 hover:text-purple-700 font-medium"
                     >
                       <Building2 size={14} className="text-purple-600" /> Verifikasi Mitra
-                    </Link>
-                  </>
-                )}
-
-                {user.roles.includes("MITRA") && (
-                  <>
-                    <div className="my-1 border-t border-slate-100" />
-                    <div className="px-4 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                      Mitra Menu
-                    </div>
-                    <Link
-                      href="/mitra/beranda"
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-purple-50 hover:text-purple-700 font-medium"
-                    >
-                      <Building2 size={14} className="text-purple-600" /> Dashboard Mitra
                     </Link>
                   </>
                 )}

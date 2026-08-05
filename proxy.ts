@@ -39,7 +39,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  if (needsMitra && session && !session.roles.includes("MITRA")) {
+  if (needsMitra && session && !(session.roles.includes("MITRA") || session.roles.includes("ADMIN"))) {
     return NextResponse.redirect(new URL(roleHome(session.roles), request.url));
   }
 
