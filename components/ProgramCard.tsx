@@ -24,10 +24,19 @@ export default function ProgramCard({ program }: { program: ProgramCardData }) {
   return (
     <div className="group flex flex-col overflow-hidden rounded-3xl border border-brand-line bg-white shadow-sm transition-shadow hover:shadow-md">
       <div className="relative h-36 w-full overflow-hidden bg-linear-to-br from-brand-forest-light/30 via-brand-forest/20 to-brand-gold/20">
-        {program.coverImageUrl && (
+        {program.coverImageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={program.coverImageUrl}
+            alt={program.title}
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=800&q=80";
+            }}
+          />
+        ) : (
+          <img
+            src="https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=800&q=80"
             alt={program.title}
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />

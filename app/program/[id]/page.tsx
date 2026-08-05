@@ -37,6 +37,9 @@ export default async function ProgramDetailPage({
           src={program.coverImageUrl || "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=800&q=80"}
           alt={program.title}
           className="h-full w-full object-cover"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=800&q=80";
+          }}
         />
       </div>
 
