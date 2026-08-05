@@ -21,6 +21,7 @@ import type {
   Notification,
   FaqItem,
 } from "@/lib/types";
+import { primaryRole } from "@/lib/types";
 import { FALLBACK_PROGRAMS, FALLBACK_MITRAS } from "@/lib/hardcoded-data";
 
 /* ------------------------------------------------------------------ */
@@ -29,6 +30,17 @@ import { FALLBACK_PROGRAMS, FALLBACK_MITRAS } from "@/lib/hardcoded-data";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Row = Record<string, any>;
+
+function parseRoles(rolesJson: string | null | undefined, fallbackRole: string | null | undefined): UserRole[] {
+  if (rolesJson) {
+    try {
+      const arr = JSON.parse(rolesJson);
+      if (Array.isArray(arr) && arr.length > 0) return arr as UserRole[];
+    } catch { /* fall through */ }
+  }
+  const role = (fallbackRole || "DONATUR") as UserRole;
+  return [role];
+}
 
 function toUser(r: Row): User {
   return {
@@ -41,7 +53,7 @@ function toUser(r: Row): User {
     latitude: r.latitude,
     longitude: r.longitude,
     avatarUrl: r.avatar_url,
-    role: r.role as UserRole,
+    roles: parseRoles(r.roles, r.role),
     emailVerified: !!r.email_verified,
     notifyEmail: !!r.notify_email,
     notifyInapp: !!r.notify_inapp,
@@ -188,19 +200,23 @@ export function createUser(input: {
   passwordHash: string;
   phone?: string | null;
   role?: UserRole;
+  roles?: UserRole[];
   emailVerified?: boolean;
 }): User {
   const id = randomUUID();
+  const roles = input.roles ?? [input.role ?? "DONATUR"];
+  const role = primaryRole(roles);
   db.prepare(
-    `INSERT INTO users (id, name, email, password_hash, phone, role, email_verified)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO users (id, name, email, password_hash, phone, role, roles, email_verified)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     id,
     input.name,
     input.email.toLowerCase().trim(),
     input.passwordHash,
     input.phone ?? null,
-    input.role ?? "DONATUR",
+    role,
+    JSON.stringify(roles),
     input.emailVerified ? 1 : 0
   );
   return getUserById(id)!;
@@ -221,6 +237,9 @@ export function getUserById(id: string): User | null {
 }
 
 export function upsertUser(user: User): User {
+  const role = primaryRole(user.roles);
+  const rolesJson = JSON.stringify(user.roles);
+
   // Check if a user with the same email already exists under a different id
   const existingByEmail = getUserByEmail(user.email);
   if (existingByEmail && existingByEmail.id !== user.id) {
@@ -228,7 +247,7 @@ export function upsertUser(user: User): User {
     db.prepare(
       `UPDATE users SET
          name = ?, phone = ?, address = ?, latitude = ?, longitude = ?,
-         avatar_url = ?, role = ?, email_verified = ?,
+         avatar_url = ?, role = ?, roles = ?, email_verified = ?,
          notify_email = ?, notify_inapp = ?, updated_at = datetime('now')
        WHERE id = ?`
     ).run(
@@ -238,7 +257,8 @@ export function upsertUser(user: User): User {
       user.latitude ?? null,
       user.longitude ?? null,
       user.avatarUrl ?? null,
-      user.role || "DONATUR",
+      role,
+      rolesJson,
       user.emailVerified ? 1 : 0,
       user.notifyEmail ? 1 : 0,
       user.notifyInapp ? 1 : 0,
@@ -248,8 +268,8 @@ export function upsertUser(user: User): User {
   }
 
   db.prepare(
-    `INSERT INTO users (id, name, email, password_hash, phone, address, latitude, longitude, avatar_url, role, email_verified, notify_email, notify_inapp, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `INSERT INTO users (id, name, email, password_hash, phone, address, latitude, longitude, avatar_url, role, roles, email_verified, notify_email, notify_inapp, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(id) DO UPDATE SET
        name = excluded.name,
        email = excluded.email,
@@ -260,6 +280,7 @@ export function upsertUser(user: User): User {
        longitude = excluded.longitude,
        avatar_url = excluded.avatar_url,
        role = excluded.role,
+       roles = excluded.roles,
        email_verified = excluded.email_verified,
        notify_email = excluded.notify_email,
        notify_inapp = excluded.notify_inapp,
@@ -274,7 +295,8 @@ export function upsertUser(user: User): User {
     user.latitude ?? null,
     user.longitude ?? null,
     user.avatarUrl ?? null,
-    user.role || "DONATUR",
+    role,
+    rolesJson,
     user.emailVerified ? 1 : 0,
     user.notifyEmail ? 1 : 0,
     user.notifyInapp ? 1 : 0,
@@ -282,6 +304,19 @@ export function upsertUser(user: User): User {
     user.updatedAt || new Date().toISOString()
   );
   return getUserById(user.id)!;
+}
+
+/** Add a role to an existing user (does not duplicate if already present) */
+export function addUserRole(userId: string, newRole: UserRole): User {
+  const user = getUserById(userId);
+  if (!user) throw new Error("User tidak ditemukan");
+  if (user.roles.includes(newRole)) return user; // already has this role
+  const updatedRoles = [...user.roles, newRole];
+  const role = primaryRole(updatedRoles);
+  db.prepare(
+    `UPDATE users SET role = ?, roles = ?, updated_at = datetime('now') WHERE id = ?`
+  ).run(role, JSON.stringify(updatedRoles), userId);
+  return getUserById(userId)!;
 }
 
 export function updateUserProfile(
@@ -468,11 +503,13 @@ export function createProgram(input: {
   type: ProgramType;
   targetAmount?: number | null;
   coverImageUrl?: string | null;
+  status?: string;
 }): Program {
   const id = randomUUID();
+  const status = input.status ?? "menunggu_verifikasi";
   db.prepare(
-    `INSERT INTO programs (id, mitra_id, title, description, type, target_amount, cover_image_url)
-     VALUES (?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO programs (id, mitra_id, title, description, type, target_amount, cover_image_url, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     id,
     input.mitraId,
@@ -480,9 +517,53 @@ export function createProgram(input: {
     input.description,
     input.type,
     input.targetAmount ?? null,
-    input.coverImageUrl ?? null
+    input.coverImageUrl ?? null,
+    status
   );
-  return getProgramById(id)!;
+
+  const prog = getProgramById(id)!;
+  try {
+    const { syncProgramToFirestore } = require("./firebase-sync");
+    syncProgramToFirestore(prog);
+  } catch (e) {
+    console.warn("[repo] Failed to sync program to firestore:", e);
+  }
+  return prog;
+}
+
+export function updateProgramStatus(id: string, status: string): void {
+  db.prepare("UPDATE programs SET status = ? WHERE id = ?").run(status, id);
+  const prog = getProgramById(id);
+  if (prog) {
+    try {
+      const { syncProgramToFirestore } = require("./firebase-sync");
+      syncProgramToFirestore(prog);
+    } catch {
+      // silently fail
+    }
+  }
+}
+
+export function deleteProgram(id: string): void {
+  try {
+    // 1. Unlink foreign key references so SQLite foreign key constraints don't fail
+    db.prepare("UPDATE donation_items SET matched_program_id = NULL WHERE matched_program_id = ?").run(id);
+    db.prepare("UPDATE donation_money SET program_id = NULL WHERE program_id = ?").run(id);
+    db.prepare("DELETE FROM program_needed_categories WHERE program_id = ?").run(id);
+
+    // 2. Delete program from SQLite database
+    db.prepare("DELETE FROM programs WHERE id = ?").run(id);
+
+    // 3. Delete program from Firestore if configured
+    try {
+      const { deleteProgramFromFirestore } = require("./firebase-sync");
+      deleteProgramFromFirestore(id);
+    } catch {
+      // silently ignore if firestore not available
+    }
+  } catch (e) {
+    console.error("[repo] deleteProgram failed:", e);
+  }
 }
 
 export function addProgramNeededCategory(
@@ -533,6 +614,7 @@ export function listActivePrograms(filter?: {
   categoryId?: string;
   search?: string;
 }): ProgramCardData[] {
+  cleanupDemoProgramsFromDb();
   const rows = db
     .prepare(
       `SELECT p.*, mp.org_name as mitra_name, mp.org_type as mitra_org_type, mp.address as mitra_address
@@ -579,6 +661,60 @@ export function listProgramsByMitra(mitraId: string): Program[] {
     .prepare("SELECT * FROM programs WHERE mitra_id = ? ORDER BY created_at DESC")
     .all(mitraId) as Row[];
   return rows.map(toProgram);
+}
+
+export function listPendingPrograms(): (Program & { mitraName: string; mitraOrgType: string })[] {
+  const rows = db
+    .prepare(
+      `SELECT p.*, mp.org_name as mitra_name, mp.org_type as mitra_org_type
+       FROM programs p JOIN mitra_profiles mp ON mp.id = p.mitra_id
+       WHERE p.status = 'menunggu_verifikasi'
+       ORDER BY p.created_at DESC`
+    )
+    .all() as Row[];
+
+  return rows.map((r) => ({
+    ...toProgram(r),
+    mitraName: r.mitra_name,
+    mitraOrgType: r.mitra_org_type,
+  }));
+}
+
+export function cleanupDemoProgramsFromDb(): void {
+  try {
+    const demoIds = [
+      "prog-pakaian-assalafiyah",
+      "prog-sembako-wonokromo",
+      "prog-pendidikan-gubeng",
+      "prog-hari-anak-sukolilo",
+    ];
+    for (const id of demoIds) {
+      db.prepare("UPDATE donation_items SET matched_program_id = NULL WHERE matched_program_id = ?").run(id);
+      db.prepare("UPDATE donation_money SET program_id = NULL WHERE program_id = ?").run(id);
+      db.prepare("DELETE FROM program_needed_categories WHERE program_id = ?").run(id);
+      db.prepare("DELETE FROM programs WHERE id = ?").run(id);
+    }
+  } catch {
+    // ignore
+  }
+}
+
+export function listAllProgramsForAdmin(): (Program & { mitraName: string; mitraOrgType: string })[] {
+  cleanupDemoProgramsFromDb();
+
+  const rows = db
+    .prepare(
+      `SELECT p.*, mp.org_name as mitra_name, mp.org_type as mitra_org_type
+       FROM programs p JOIN mitra_profiles mp ON mp.id = p.mitra_id
+       ORDER BY p.created_at DESC`
+    )
+    .all() as Row[];
+
+  return rows.map((r) => ({
+    ...toProgram(r),
+    mitraName: r.mitra_name,
+    mitraOrgType: r.mitra_org_type,
+  }));
 }
 
 export function incrementCollectedAmount(

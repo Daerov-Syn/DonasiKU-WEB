@@ -1,22 +1,27 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { getAggregateStatsUnified, getActivePrograms, getPublishedStories } from "@/lib/unified-repo";
-import { listAllDonationItemsForAdmin } from "@/lib/repo";
+import { listAllDonationItemsForAdmin, listPendingPrograms, listAllProgramsForAdmin } from "@/lib/repo";
 import AdminDashboardClient from "@/components/AdminDashboardClient";
 
 export default async function AdminPage() {
   const user = await getCurrentUser();
-  if (!user || user.role !== "ADMIN") redirect("/login");
+  if (!user || !user.roles.includes("ADMIN")) redirect("/login");
 
   const stats = await getAggregateStatsUnified();
   const programs = await getActivePrograms();
   const stories = await getPublishedStories();
 
+  let pendingPrograms: any[] = [];
+  let allPrograms: any[] = [];
   let donationItems: any[] = [];
+
   try {
+    pendingPrograms = listPendingPrograms();
+    allPrograms = listAllProgramsForAdmin();
     donationItems = listAllDonationItemsForAdmin();
   } catch (e) {
-    console.warn("[AdminPage] listAllDonationItemsForAdmin failed:", e);
+    console.warn("[AdminPage] DB query failed:", e);
   }
 
   return (
@@ -26,6 +31,8 @@ export default async function AdminPage() {
       programs={programs}
       stories={stories}
       donationItems={donationItems}
+      pendingPrograms={pendingPrograms}
+      allPrograms={allPrograms}
     />
   );
 }

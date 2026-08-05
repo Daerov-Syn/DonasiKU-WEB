@@ -10,13 +10,14 @@ import {
   SESSION_MAX_AGE_SECONDS,
 } from "@/lib/auth";
 import { getCurrentUser } from "@/lib/session";
-import { mitraRegisterSchema, programSchema } from "@/lib/validators";
+import { mitraRegisterSchema, mitraUpgradeSchema, programSchema } from "@/lib/validators";
 import { saveUploadedFile } from "@/lib/upload";
 import {
   getUserByEmail,
   createUser,
   createMitraProfile,
   getMitraProfileByUserId,
+  addUserRole,
   createProgram,
   addProgramNeededCategory,
   getDonationItemById,
@@ -26,16 +27,95 @@ import {
   createCertificate,
 } from "@/lib/repo";
 import { generateCertificateNumber } from "@/lib/certificate";
-import type { ItemStatus } from "@/lib/types";
+import { syncUserToFirestore } from "@/lib/firebase-sync";
+import { saveFirebaseUser } from "@/lib/firebase-repo";
+import type { ItemStatus, UserRole, User } from "@/lib/types";
+import { primaryRole } from "@/lib/types";
 
 export interface ActionState {
   error?: string;
 }
 
+/**
+ * Register as Mitra — supports two modes:
+ * 1. UPGRADE: User is already logged in → add MITRA role to existing account
+ * 2. NEW: User is not logged in → create new account with MITRA role
+ */
 export async function registerMitraAction(
   _prevState: ActionState,
   formData: FormData
 ): Promise<ActionState> {
+  const currentUser = await getCurrentUser();
+
+  // ===== MODE 1: UPGRADE existing account =====
+  if (currentUser) {
+    // Check if already a mitra
+    if (currentUser.roles.includes("MITRA")) {
+      return { error: "Akun Anda sudah terdaftar sebagai mitra." };
+    }
+
+    const parsed = mitraUpgradeSchema.safeParse({
+      orgName: formData.get("orgName"),
+      orgType: formData.get("orgType"),
+      description: formData.get("description") || undefined,
+      address: formData.get("address"),
+      latitude: formData.get("latitude"),
+      longitude: formData.get("longitude"),
+    });
+    if (!parsed.success) {
+      return { error: parsed.error.issues[0]?.message ?? "Data tidak valid" };
+    }
+
+    let legalDocsUrl: string | undefined;
+    const docFile = formData.get("legalDocs");
+    if (docFile instanceof File && docFile.size > 0) {
+      legalDocsUrl = await saveUploadedFile(docFile, "legalitas-mitra");
+    }
+
+    // Add MITRA role to existing user
+    let updatedUser: User;
+    try {
+      updatedUser = addUserRole(currentUser.id, "MITRA");
+    } catch {
+      // SQLite unavailable, update the in-memory user
+      updatedUser = { ...currentUser, roles: [...currentUser.roles, "MITRA" as UserRole] };
+    }
+
+    // Save updated user to Firebase
+    await saveFirebaseUser(updatedUser);
+
+    // Create mitra profile
+    createMitraProfile({
+      userId: currentUser.id,
+      orgName: parsed.data.orgName,
+      orgType: parsed.data.orgType,
+      description: parsed.data.description ?? null,
+      legalDocsUrl,
+      latitude: parsed.data.latitude,
+      longitude: parsed.data.longitude,
+      address: parsed.data.address,
+      verified: false,
+    });
+
+    // Refresh session with updated roles
+    const token = await signSession({
+      userId: updatedUser.id,
+      roles: updatedUser.roles,
+      name: updatedUser.name,
+    });
+    const cookieStore = await cookies();
+    cookieStore.set(SESSION_COOKIE, token, {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      maxAge: SESSION_MAX_AGE_SECONDS,
+      path: "/",
+    });
+
+    redirect("/mitra/beranda");
+  }
+
+  // ===== MODE 2: NEW account registration =====
   const parsed = mitraRegisterSchema.safeParse({
     name: formData.get("name"),
     email: formData.get("email"),
@@ -68,7 +148,7 @@ export async function registerMitraAction(
     email: parsed.data.email,
     passwordHash,
     phone: parsed.data.phone,
-    role: "MITRA",
+    roles: ["MITRA"],
     emailVerified: true,
   });
   createMitraProfile({
@@ -83,7 +163,7 @@ export async function registerMitraAction(
     verified: false,
   });
 
-  const token = await signSession({ userId: user.id, role: "MITRA", name: user.name });
+  const token = await signSession({ userId: user.id, roles: user.roles, name: user.name });
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, token, {
     httpOnly: true,
@@ -101,7 +181,7 @@ export async function createProgramAction(
   formData: FormData
 ): Promise<ActionState> {
   const user = await getCurrentUser();
-  if (!user || user.role !== "MITRA") redirect("/login");
+  if (!user || !user.roles.includes("MITRA")) redirect("/login");
   const mitra = getMitraProfileByUserId(user.id);
   if (!mitra) return { error: "Profil mitra tidak ditemukan." };
   if (!mitra.verified) {
@@ -136,6 +216,7 @@ export async function createProgramAction(
     targetAmount:
       parsed.data.type === "BARANG" ? null : parsed.data.targetAmount ?? null,
     coverImageUrl,
+    status: "menunggu_verifikasi",
   });
   for (const catId of parsed.data.categoryIds) {
     addProgramNeededCategory(program.id, catId, 3);
@@ -159,7 +240,7 @@ const TRANSITION_NOTE: Record<string, string> = {
 
 export async function advanceItemStatusAction(itemId: string): Promise<void> {
   const user = await getCurrentUser();
-  if (!user || user.role !== "MITRA") redirect("/login");
+  if (!user || !user.roles.includes("MITRA")) redirect("/login");
   const mitra = getMitraProfileByUserId(user.id);
   if (!mitra) redirect("/mitra/beranda");
 
@@ -190,4 +271,23 @@ export async function advanceItemStatusAction(itemId: string): Promise<void> {
 
   revalidatePath("/mitra/beranda");
   revalidatePath(`/riwayat/barang/${itemId}`);
+}
+
+export async function deleteProgramByMitraAction(formData: FormData): Promise<void> {
+  const user = await getCurrentUser();
+  if (!user || !user.roles.includes("MITRA")) redirect("/login");
+  const { getMitraProfileByUserId, getProgramById, deleteProgram } = await import("@/lib/repo");
+  const mitra = getMitraProfileByUserId(user.id);
+  if (!mitra) redirect("/login");
+
+  const programId = String(formData.get("programId"));
+  const program = getProgramById(programId);
+  if (!program || program.mitraId !== mitra.id) redirect("/mitra/beranda");
+
+  deleteProgram(programId);
+
+  revalidatePath("/mitra/beranda");
+  revalidatePath("/admin");
+  revalidatePath("/beranda");
+  redirect("/mitra/beranda");
 }

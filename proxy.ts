@@ -1,21 +1,22 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, verifySession } from "@/lib/auth";
+import type { UserRole } from "@/lib/types";
 
-const DONATUR_ONLY_PREFIXES = [
+const AUTH_REQUIRED_PREFIXES = [
   "/beranda",
   "/donasi",
   "/riwayat",
   "/sertifikat",
   "/notifikasi",
+  "/profil",
 ];
-const AUTH_REQUIRED_PREFIXES = [...DONATUR_ONLY_PREFIXES, "/profil"];
 const MITRA_PREFIXES = ["/mitra/beranda", "/mitra/program"];
 const ADMIN_PREFIXES = ["/admin"];
 const GUEST_ONLY_PATHS = ["/login", "/register"];
 
-function roleHome(role: string): string {
-  if (role === "ADMIN") return "/admin/verifikasi-barang";
-  if (role === "MITRA") return "/mitra/beranda";
+function roleHome(roles: UserRole[]): string {
+  if (roles.includes("ADMIN")) return "/admin/verifikasi-barang";
+  if (roles.includes("MITRA")) return "/mitra/beranda";
   return "/beranda";
 }
 
@@ -30,7 +31,7 @@ export async function proxy(request: NextRequest) {
   const needsAdmin = ADMIN_PREFIXES.some((p) => pathname.startsWith(p));
 
   if (isGuestOnlyPath && session) {
-    return NextResponse.redirect(new URL(roleHome(session.role), request.url));
+    return NextResponse.redirect(new URL(roleHome(session.roles), request.url));
   }
 
   if ((needsAuth || needsMitra || needsAdmin) && !session) {
@@ -39,12 +40,12 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  if (needsMitra && session && session.role !== "MITRA") {
-    return NextResponse.redirect(new URL(roleHome(session.role), request.url));
+  if (needsMitra && session && !session.roles.includes("MITRA")) {
+    return NextResponse.redirect(new URL(roleHome(session.roles), request.url));
   }
 
-  if (needsAdmin && session && session.role !== "ADMIN") {
-    return NextResponse.redirect(new URL(roleHome(session.role), request.url));
+  if (needsAdmin && session && !session.roles.includes("ADMIN")) {
+    return NextResponse.redirect(new URL(roleHome(session.roles), request.url));
   }
 
   return NextResponse.next();

@@ -191,6 +191,8 @@ export function initSchema() {
     "ALTER TABLE donation_items ADD COLUMN pickup_date TEXT",
     "ALTER TABLE donation_items ADD COLUMN pickup_time TEXT",
     "ALTER TABLE donation_items ADD COLUMN tracking_code TEXT",
+    // Multi-role migration: add `roles` JSON column
+    "ALTER TABLE users ADD COLUMN roles TEXT",
   ];
   for (const sql of migrations) {
     try {
@@ -198,6 +200,13 @@ export function initSchema() {
     } catch {
       // Column already exists or failed — skip
     }
+  }
+
+  // Populate `roles` from existing `role` column where roles is still NULL
+  try {
+    db.exec(`UPDATE users SET roles = '["' || role || '"]' WHERE roles IS NULL`);
+  } catch {
+    // Already populated or failed — skip
   }
 
   initialized = true;

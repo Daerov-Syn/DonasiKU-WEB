@@ -29,6 +29,8 @@ import type { FallbackAggregateStats } from "@/lib/hardcoded-data";
 
 import type { DonationItem } from "@/lib/types";
 
+import { approveProgramAction, rejectProgramAction, stopProgramAction, deleteProgramAction } from "@/actions/admin";
+
 interface AdminUser {
   id: string;
   name: string;
@@ -46,12 +48,16 @@ export default function AdminDashboardClient({
   stats,
   programs,
   donationItems = [],
+  pendingPrograms = [],
+  allPrograms = [],
 }: {
   user: AdminUser;
   stats: FallbackAggregateStats;
   programs: UnifiedProgramCardData[];
   stories: unknown[];
   donationItems?: AdminDonationItem[];
+  pendingPrograms?: Array<any>;
+  allPrograms?: Array<any>;
 }) {
   const [activeTab, setActiveTab] = useState<
     "beranda" | "program" | "verifikasi" | "donasi-dana" | "donasi-barang" | "statistik" | "donatur"
@@ -459,48 +465,107 @@ export default function AdminDashboardClient({
                 </Link>
               </div>
 
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {programs.map((p) => (
-                  <div
-                    key={p.id}
-                    className="rounded-3xl border border-slate-200/80 bg-white overflow-hidden shadow-xs hover:shadow-md transition-all p-4 space-y-3"
-                  >
-                    <div className="relative h-36 w-full overflow-hidden rounded-2xl bg-slate-100">
-                      {p.coverImageUrl && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={p.coverImageUrl} alt="" className="h-full w-full object-cover" />
-                      )}
-                      <span className="absolute top-3 right-3 rounded-full bg-white/90 px-3 py-1 text-[10px] font-extrabold text-emerald-700">
-                        Aktif
-                      </span>
-                    </div>
+              {allPrograms.length === 0 ? (
+                <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center space-y-3">
+                  <p className="font-display font-black text-slate-800 text-lg">
+                    Belum ada program donasi
+                  </p>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                    Belum ada program yang dibuat oleh mitra. Program yang dibuat mitra dan disetujui akan tampil di sini.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {allPrograms.map((p: any) => {
+                    const isAktif = p.status === "aktif" || !p.status;
+                    const isPending = p.status === "menunggu_verifikasi";
+                    const isDihentikan = p.status === "dihentikan";
 
-                    <h3 className="font-display font-extrabold text-sm text-slate-900 leading-snug">
-                      {p.title}
-                    </h3>
-                    <p className="text-xs text-slate-500">{p.mitraName}</p>
+                    return (
+                      <div
+                        key={p.id}
+                        className="rounded-3xl border border-slate-200/80 bg-white overflow-hidden shadow-xs hover:shadow-md transition-all p-4 space-y-3 flex flex-col justify-between"
+                      >
+                        <div className="space-y-3">
+                          <div className="relative h-36 w-full overflow-hidden rounded-2xl bg-slate-100">
+                            {p.coverImageUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={p.coverImageUrl} alt="" className="h-full w-full object-cover" />
+                            ) : (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src="https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=800&q=80" alt="" className="h-full w-full object-cover" />
+                            )}
+                            <span className={`absolute top-3 right-3 rounded-full px-3 py-1 text-[10px] font-extrabold ${
+                              isAktif ? "bg-emerald-100 text-emerald-800" : isPending ? "bg-amber-100 text-amber-800" : isDihentikan ? "bg-slate-200 text-slate-700" : "bg-rose-100 text-rose-800"
+                            }`}>
+                              {isAktif ? "Aktif" : isPending ? "Menunggu Verifikasi" : isDihentikan ? "Dihentikan" : "Ditolak"}
+                            </span>
+                          </div>
 
-                    <div>
-                      <div className="flex justify-between text-xs font-bold mb-1">
-                        <span>Progress</span>
-                        <span className="text-purple-600">
-                          {p.targetAmount ? Math.round((p.collectedAmount / p.targetAmount) * 100) : 55}%
-                        </span>
+                          <h3 className="font-display font-extrabold text-sm text-slate-900 leading-snug">
+                            {p.title}
+                          </h3>
+                          <p className="text-xs text-slate-500">{p.mitraName || "Mitra DonasiKu"}</p>
+
+                          <div>
+                            <div className="flex justify-between text-xs font-bold mb-1">
+                              <span>Progress</span>
+                              <span className="text-purple-600">
+                                {p.targetAmount ? Math.round(((p.collectedAmount || 0) / p.targetAmount) * 100) : 0}%
+                              </span>
+                            </div>
+                            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                              <div
+                                className="h-full rounded-full bg-purple-600"
+                                style={{
+                                  width: `${
+                                    p.targetAmount ? Math.round(((p.collectedAmount || 0) / p.targetAmount) * 100) : 0
+                                  }%`,
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Admin Controls: Hentikan / Aktifkan & Hapus */}
+                        <div className="pt-3 border-t border-slate-100 flex items-center gap-2">
+                          <form action={stopProgramAction} className="flex-1">
+                            <input type="hidden" name="programId" value={p.id} />
+                            <button
+                              type="submit"
+                              className={`w-full rounded-xl py-1.5 text-xs font-bold transition-all ${
+                                isDihentikan
+                                  ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                                  : "bg-amber-100 text-amber-900 hover:bg-amber-200"
+                              }`}
+                            >
+                              {isDihentikan ? "▶️ Aktifkan" : "⏸️ Hentikan"}
+                            </button>
+                          </form>
+
+                          <form
+                            action={deleteProgramAction}
+                            onSubmit={(e) => {
+                              if (!confirm(`Yakin ingin menghapus program "${p.title}"?`)) {
+                                e.preventDefault();
+                              }
+                            }}
+                            className="shrink-0"
+                          >
+                            <input type="hidden" name="programId" value={p.id} />
+                            <button
+                              type="submit"
+                              className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-600 hover:bg-rose-100"
+                            >
+                              🗑️ Hapus
+                            </button>
+                          </form>
+                        </div>
                       </div>
-                      <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
-                        <div
-                          className="h-full rounded-full bg-purple-600"
-                          style={{
-                            width: `${
-                              p.targetAmount ? Math.round((p.collectedAmount / p.targetAmount) * 100) : 55
-                            }%`,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
@@ -513,7 +578,7 @@ export default function AdminDashboardClient({
                     Verifikasi Program Baru
                   </h2>
                   <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-extrabold text-amber-800">
-                    2 Menunggu Persetujuan
+                    {pendingPrograms.length} Menunggu Persetujuan
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 mt-1">
@@ -521,77 +586,47 @@ export default function AdminDashboardClient({
                 </p>
               </div>
 
-              {/* Alert */}
-              <div className="rounded-2xl bg-amber-50 border border-amber-200/80 p-4 flex items-center gap-3 text-xs font-bold text-amber-900">
-                <AlertTriangle size={18} className="text-amber-600 shrink-0" />
-                <span>2 item menunggu persetujuanmu. Periksa detail sebelum menyetujui.</span>
-              </div>
-
-              {/* Action Cards */}
-              <div className="grid gap-4 sm:grid-cols-3">
-                <div className="rounded-3xl border border-slate-200/80 bg-white p-5 space-y-3 shadow-xs">
-                  <div className="flex justify-between items-start">
-                    <h4 className="font-display font-extrabold text-sm text-slate-900">
-                      Klinik Gratis Warga Gresik
-                    </h4>
-                    <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold text-amber-800">
-                      Baru
-                    </span>
-                  </div>
-                  <p className="text-xs text-purple-600 font-bold">Yayasan Sehat Bersama</p>
-                  <p className="text-xs text-slate-500">Layanan kesehatan gratis 200 warga Gresik</p>
-                  <div className="pt-2 flex items-center justify-between border-t border-slate-100">
-                    <span className="text-xs font-bold text-emerald-600 flex items-center gap-1">
-                      <CheckCircle2 size={14} /> Disetujui
-                    </span>
-                    <button className="text-xs font-bold text-slate-500 hover:text-purple-600">
-                      Lihat Detail
-                    </button>
-                  </div>
+              {pendingPrograms.length === 0 ? (
+                <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center space-y-3">
+                  <p className="font-display font-black text-slate-800 text-lg">
+                    Tidak ada pengajuan program baru
+                  </p>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                    Semua pengajuan program dari mitra telah ditinjau.
+                  </p>
                 </div>
-
-                <div className="rounded-3xl border border-slate-200/80 bg-white p-5 space-y-3 shadow-xs">
-                  <div className="flex justify-between items-start">
-                    <h4 className="font-display font-extrabold text-sm text-slate-900">
-                      Bantuan Banjir Sidoarjo
-                    </h4>
-                    <span className="rounded-full bg-rose-100 px-2.5 py-0.5 text-[10px] font-bold text-rose-800">
-                      Darurat
-                    </span>
-                  </div>
-                  <p className="text-xs text-purple-600 font-bold">Relawan Peduli Jatim</p>
-                  <p className="text-xs text-slate-500">Sembako, seragam &amp; pakaian korban banjir</p>
-                  <div className="pt-2 flex items-center gap-2 border-t border-slate-100">
-                    <button className="flex-1 rounded-xl bg-emerald-600 py-1.5 text-xs font-bold text-white hover:bg-emerald-700">
-                      &check; Setujui
-                    </button>
-                    <button className="flex-1 rounded-xl border border-slate-200 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50">
-                      &times; Tolak
-                    </button>
-                  </div>
+              ) : (
+                <div className="grid gap-4 sm:grid-cols-3">
+                  {pendingPrograms.map((p: any) => (
+                    <div key={p.id} className="rounded-3xl border border-purple-200 bg-purple-50/40 p-5 space-y-3 shadow-xs">
+                      <div className="flex justify-between items-start">
+                        <h4 className="font-display font-extrabold text-sm text-slate-900">
+                          {p.title}
+                        </h4>
+                        <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold text-amber-800">
+                          Baru
+                        </span>
+                      </div>
+                      <p className="text-xs text-purple-600 font-bold">{p.mitraName || "Mitra Posko"}</p>
+                      <p className="text-xs text-slate-500 line-clamp-2">{p.description}</p>
+                      <div className="pt-2 flex items-center gap-2 border-t border-slate-100">
+                        <form action={approveProgramAction} className="flex-1">
+                          <input type="hidden" name="programId" value={p.id} />
+                          <button type="submit" className="w-full rounded-xl bg-emerald-600 py-1.5 text-xs font-bold text-white hover:bg-emerald-700">
+                            &check; Setujui
+                          </button>
+                        </form>
+                        <form action={rejectProgramAction} className="flex-1">
+                          <input type="hidden" name="programId" value={p.id} />
+                          <button type="submit" className="w-full rounded-xl border border-slate-200 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50">
+                            &times; Tolak
+                          </button>
+                        </form>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-
-                <div className="rounded-3xl border border-slate-200/80 bg-white p-5 space-y-3 shadow-xs">
-                  <div className="flex justify-between items-start">
-                    <h4 className="font-display font-extrabold text-sm text-slate-900">
-                      Drop Point Wonokromo Baru
-                    </h4>
-                    <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold text-amber-800">
-                      Baru
-                    </span>
-                  </div>
-                  <p className="text-xs text-purple-600 font-bold">Permintaan Donatur</p>
-                  <p className="text-xs text-slate-500">Penambahan titik drop Wonokromo</p>
-                  <div className="pt-2 flex items-center gap-2 border-t border-slate-100">
-                    <button className="flex-1 rounded-xl bg-emerald-600 py-1.5 text-xs font-bold text-white hover:bg-emerald-700">
-                      &check; Setujui
-                    </button>
-                    <button className="flex-1 rounded-xl border border-slate-200 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50">
-                      &times; Tolak
-                    </button>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
           )}
 

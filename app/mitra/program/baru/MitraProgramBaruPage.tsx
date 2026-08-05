@@ -5,7 +5,7 @@ import CreateProgramForm from "@/components/CreateProgramForm";
 
 export default async function BuatProgramPage() {
   const user = await getCurrentUser();
-  if (!user || user.role !== "MITRA") redirect("/login");
+  if (!user || !user.roles.includes("MITRA")) redirect("/login");
   const mitra = getMitraProfileByUserId(user.id);
   if (!mitra) redirect("/login");
 

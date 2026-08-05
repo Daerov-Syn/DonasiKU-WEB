@@ -43,7 +43,7 @@ export async function getCurrentUser(): Promise<User | null> {
     latitude: null,
     longitude: null,
     avatarUrl: null,
-    role: session.role,
+    roles: session.roles,
     emailVerified: true,
     notifyEmail: true,
     notifyInapp: true,

@@ -6,7 +6,7 @@ import { approveMitraAction, rejectMitraAction } from "@/actions/admin";
 
 export default async function AdminVerifikasiMitraPage() {
   const user = await getCurrentUser();
-  if (!user || user.role !== "ADMIN") redirect("/login");
+  if (!user || !user.roles.includes("ADMIN")) redirect("/login");
 
   const pending = listPendingMitraProfiles();
 

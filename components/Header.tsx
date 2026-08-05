@@ -109,7 +109,7 @@ export default async function Header() {
               <div className="absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-2xl border border-slate-100 bg-white py-1.5 shadow-xl">
                 <div className="px-4 py-2 border-b border-slate-100">
                   <p className="text-xs font-bold text-slate-900 truncate">{user.name}</p>
-                  <p className="text-[11px] text-purple-600 font-semibold uppercase">{user.role}</p>
+                  <p className="text-[11px] text-purple-600 font-semibold uppercase">{user.roles.join(" · ")}</p>
                 </div>
 
                 <Link
@@ -134,13 +134,13 @@ export default async function Header() {
                 </Link>
 
                 <Link
-                  href="/beranda?type=UANG"
+                  href={user.roles.includes("MITRA") ? "/mitra/beranda" : "/mitra/daftar"}
                   className="flex items-center gap-2 px-4 py-2 text-sm text-purple-700 hover:bg-purple-50 font-bold"
                 >
-                  <Wallet size={14} className="text-amber-500" /> Donasi Uang Sekarang
+                  <Building2 size={14} className="text-purple-600" /> {user.roles.includes("MITRA") ? "Dashboard Mitra" : "Daftar Mitra"}
                 </Link>
 
-                {user.role === "ADMIN" && (
+                {user.roles.includes("ADMIN") && (
                   <>
                     <div className="my-1 border-t border-slate-100" />
                     <div className="px-4 py-1 text-[10px] font-bold uppercase tracking-wider text-purple-600">
@@ -167,7 +167,7 @@ export default async function Header() {
                   </>
                 )}
 
-                {user.role === "MITRA" && (
+                {user.roles.includes("MITRA") && (
                   <>
                     <div className="my-1 border-t border-slate-100" />
                     <div className="px-4 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">

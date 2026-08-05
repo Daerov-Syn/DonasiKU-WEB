@@ -47,7 +47,23 @@ export default async function ProfilPage() {
           </h1>
           <p className="text-xs text-slate-500 mt-1">{user.email}</p>
         </div>
-        <div>{getRoleBadge(user.role)}</div>
+        <div className="flex flex-wrap gap-1.5">
+          {user.roles.includes("ADMIN") && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-100 px-3.5 py-1 text-xs font-extrabold text-purple-700 shadow-xs border border-purple-200">
+              <ShieldCheck size={14} className="text-purple-600" /> Admin Control
+            </span>
+          )}
+          {user.roles.includes("MITRA") && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3.5 py-1 text-xs font-extrabold text-emerald-700 shadow-xs border border-emerald-200">
+              <Building2 size={14} className="text-emerald-600" /> Mitra Lembaga / Posko
+            </span>
+          )}
+          {user.roles.includes("DONATUR") && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3.5 py-1 text-xs font-bold text-slate-700 border border-slate-200">
+              Donatur Peduli
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Ringkasan Dampak Personal */}
@@ -91,7 +107,7 @@ export default async function ProfilPage() {
       {/* ================================================================ */}
       {/* 🔴 PANEL DASHBOARD ADMIN CONTROL (Aesthetic matching screenshot) */}
       {/* ================================================================ */}
-      {user.role === "ADMIN" && (
+      {user.roles.includes("ADMIN") && (
         <div className="rounded-3xl border border-purple-200/80 bg-gradient-to-br from-purple-700 via-purple-600 to-purple-900 p-6 sm:p-8 text-white shadow-xl shadow-purple-900/20 space-y-6 relative overflow-hidden">
           <div className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-white/10 blur-2xl" />
 
@@ -178,7 +194,7 @@ export default async function ProfilPage() {
       {/* ================================================================ */}
       {/* 🟢 PANEL KHUSUS MITRA                                            */}
       {/* ================================================================ */}
-      {user.role === "MITRA" && (
+      {user.roles.includes("MITRA") && (
         <div className="rounded-3xl border border-emerald-200 bg-emerald-50/50 p-6 sm:p-8 space-y-4 shadow-sm">
           <div className="flex items-center gap-2">
             <Building2 size={22} className="text-emerald-600" />
@@ -229,7 +245,7 @@ export default async function ProfilPage() {
       )}
 
       {/* BANNER OPSIONAL: Opsi Daftar Mitra untuk Donatur */}
-      {user.role === "DONATUR" && (
+      {!user.roles.includes("MITRA") && (
         <div className="rounded-3xl border border-purple-100 bg-gradient-to-r from-purple-50 to-purple-100/50 p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h3 className="font-display font-extrabold text-slate-900 text-base">

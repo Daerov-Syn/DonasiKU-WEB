@@ -80,64 +80,7 @@ export const FALLBACK_MITRAS: MitraProfile[] = [
 // ================================================================
 // PROGRAMS (Fallback)
 // ================================================================
-export const FALLBACK_PROGRAMS: Program[] = [
-  {
-    id: "prog-pakaian-assalafiyah",
-    mitraId: "mitra-assalafiyah",
-    title: "Pakaian Layak untuk Anak Panti",
-    description:
-      "Program pengumpulan pakaian layak pakai dan dana bantuan untuk anak-anak di panti asuhan. Kami membutuhkan seragam sekolah, pakaian harian, dan dana pendukung.",
-    type: "KEDUANYA",
-    targetAmount: 5000000,
-    collectedAmount: 4200000,
-    coverImageUrl:
-      "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=800&q=80",
-    status: "aktif",
-    createdAt: "2025-06-01T08:00:00.000Z",
-  },
-  {
-    id: "prog-sembako-wonokromo",
-    mitraId: "mitra-wonokromo",
-    title: "Kebutuhan Harian Lansia",
-    description:
-      "Mendukung kebutuhan peralatan rumah tangga, sembako, dan dana operasional harian untuk 30 lansia di Wisma Lansia Sejahtera.",
-    type: "KEDUANYA",
-    targetAmount: 5000000,
-    collectedAmount: 1750000,
-    coverImageUrl:
-      "https://images.unsplash.com/photo-1593113598332-cd288d649433?auto=format&fit=crop&w=800&q=80",
-    status: "aktif",
-    createdAt: "2025-06-15T08:00:00.000Z",
-  },
-  {
-    id: "prog-pendidikan-gubeng",
-    mitraId: "mitra-gubeng",
-    title: "Buku & Beasiswa untuk Anak Jalanan",
-    description:
-      "Menggalang buku bacaan, alat tulis, dan dana pendidikan untuk 60 anak binaan yayasan yang membutuhkan dukungan belajar.",
-    type: "KEDUANYA",
-    targetAmount: 10000000,
-    collectedAmount: 250000,
-    coverImageUrl:
-      "https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=800&q=80",
-    status: "aktif",
-    createdAt: "2025-07-01T08:00:00.000Z",
-  },
-  {
-    id: "prog-hari-anak-sukolilo",
-    mitraId: "mitra-gubeng",
-    title: "Elektronik untuk Ruang Belajar Panti",
-    description:
-      "Membutuhkan perangkat elektronik (laptop/printer bekas layak pakai) dan dana pengadaan alat penunjang kegiatan belajar mengajar panti asuhan.",
-    type: "KEDUANYA",
-    targetAmount: 8000000,
-    collectedAmount: 6650000,
-    coverImageUrl:
-      "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80",
-    status: "aktif",
-    createdAt: "2025-07-23T08:00:00.000Z",
-  },
-];
+export const FALLBACK_PROGRAMS: Program[] = [];
 
 // ================================================================
 // PROGRAM CARD DATA (Extended, for beranda display)

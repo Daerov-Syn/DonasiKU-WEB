@@ -59,6 +59,16 @@ export const mitraRegisterSchema = z.object({
   longitude: z.coerce.number(),
 });
 
+/** Schema for logged-in users upgrading their account to include MITRA role */
+export const mitraUpgradeSchema = z.object({
+  orgName: z.string().min(3, "Nama lembaga minimal 3 karakter"),
+  orgType: z.enum(["Panti Asuhan", "Panti Jompo", "Lembaga Sosial"]),
+  description: z.string().optional(),
+  address: z.string().min(5, "Alamat wajib diisi"),
+  latitude: z.coerce.number(),
+  longitude: z.coerce.number(),
+});
+
 export const programSchema = z.object({
   title: z.string().min(5, "Judul minimal 5 karakter"),
   description: z.string().min(20, "Deskripsi minimal 20 karakter"),

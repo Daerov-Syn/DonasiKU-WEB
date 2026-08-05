@@ -21,7 +21,7 @@ export default async function BerandaPage({
   const params = await searchParams;
   const categories = await getCategories();
 
-  const unreadCount = user && user.role === "DONATUR" ? await getUnreadNotificationCount(user.id) : 2;
+  const unreadCount = user && user.roles.includes("DONATUR") ? await getUnreadNotificationCount(user.id) : 2;
 
   // Calculate actual donor statistics if user exists
   const pastItems = user ? await getDonationItemsByDonorUnified(user.id) : [];

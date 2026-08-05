@@ -11,7 +11,7 @@
 import { doc, setDoc } from "firebase/firestore";
 import { db as firestoreDb } from "@/lib/firebase";
 import { isFirebaseConfigured } from "@/lib/firebase";
-import type {
+import {
   DonationItem,
   DonationMoney,
   Certificate,
@@ -19,6 +19,7 @@ import type {
   User,
   Program,
 } from "@/lib/types";
+import { primaryRole } from "@/lib/types";
 
 /** Helper: simpan dokumen ke Firestore jika Firebase sudah dikonfigurasi */
 async function syncToFirestore(
@@ -49,7 +50,8 @@ export async function syncUserToFirestore(user: User): Promise<void> {
     latitude: user.latitude,
     longitude: user.longitude,
     avatarUrl: user.avatarUrl,
-    role: user.role,
+    roles: user.roles,
+    role: primaryRole(user.roles), // backward compat for mobile
     emailVerified: user.emailVerified,
     notifyEmail: user.notifyEmail,
     notifyInapp: user.notifyInapp,
@@ -223,4 +225,15 @@ export async function syncProgramToFirestore(program: Program): Promise<void> {
     programNama: program.title,
     created_at: program.createdAt,
   });
+}
+
+export async function deleteProgramFromFirestore(programId: string): Promise<void> {
+  if (!isFirebaseConfigured) return;
+  try {
+    const { doc, deleteDoc } = await import("firebase/firestore");
+    const ref = doc(firestoreDb, "programs", programId);
+    await deleteDoc(ref);
+  } catch (err) {
+    console.warn(`[firebase-sync] Gagal menghapus program ${programId} dari Firestore:`, err);
+  }
 }

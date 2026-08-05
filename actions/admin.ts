@@ -14,7 +14,7 @@ import {
 
 async function requireAdmin() {
   const user = await getCurrentUser();
-  if (!user || user.role !== "ADMIN") redirect("/login");
+  if (!user || !user.roles.includes("ADMIN")) redirect("/login");
   return user;
 }
 
@@ -79,4 +79,86 @@ export async function rejectMitraAction(formData: FormData): Promise<void> {
   const mitraId = String(formData.get("mitraId"));
   setMitraVerified(mitraId, false);
   revalidatePath("/admin/verifikasi-mitra");
+}
+
+export async function approveProgramAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const programId = String(formData.get("programId"));
+  const { getProgramById, updateProgramStatus, getMitraProfileById, createNotification } = await import("@/lib/repo");
+  const program = getProgramById(programId);
+  if (!program) redirect("/admin");
+
+  updateProgramStatus(programId, "aktif");
+
+  const mitra = getMitraProfileById(program.mitraId);
+  if (mitra) {
+    createNotification({
+      userId: mitra.userId,
+      type: "program_baru",
+      message: `Program donasi "${program.title}" telah disetujui oleh Admin dan sekarang aktif secara publik!`,
+    });
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/mitra/beranda");
+  revalidatePath("/beranda");
+}
+
+export async function rejectProgramAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const programId = String(formData.get("programId"));
+  const reason = String(formData.get("reason") || "Program belum memenuhi syarat verifikasi.");
+  const { getProgramById, updateProgramStatus, getMitraProfileById, createNotification } = await import("@/lib/repo");
+  const program = getProgramById(programId);
+  if (!program) redirect("/admin");
+
+  updateProgramStatus(programId, "ditolak");
+
+  const mitra = getMitraProfileById(program.mitraId);
+  if (mitra) {
+    createNotification({
+      userId: mitra.userId,
+      type: "program_baru",
+      message: `Pengajuan program "${program.title}" ditolak oleh Admin. Alasan: ${reason}`,
+    });
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/mitra/beranda");
+}
+
+export async function stopProgramAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const programId = String(formData.get("programId"));
+  const { getProgramById, updateProgramStatus, getMitraProfileById, createNotification } = await import("@/lib/repo");
+  const program = getProgramById(programId);
+  if (!program) redirect("/admin");
+
+  const newStatus = program.status === "dihentikan" ? "aktif" : "dihentikan";
+  updateProgramStatus(programId, newStatus);
+
+  const mitra = getMitraProfileById(program.mitraId);
+  if (mitra) {
+    createNotification({
+      userId: mitra.userId,
+      type: "program_baru",
+      message: `Status program donasi "${program.title}" telah diubah menjadi ${newStatus.toUpperCase()} oleh Admin.`,
+    });
+  }
+
+  revalidatePath("/admin");
+  revalidatePath("/mitra/beranda");
+  revalidatePath("/beranda");
+}
+
+export async function deleteProgramAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const programId = String(formData.get("programId"));
+  const { deleteProgram } = await import("@/lib/repo");
+
+  deleteProgram(programId);
+
+  revalidatePath("/admin");
+  revalidatePath("/mitra/beranda");
+  revalidatePath("/beranda");
 }

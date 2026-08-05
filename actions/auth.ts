@@ -17,20 +17,22 @@ import {
   saveFirebaseUser,
 } from "@/lib/firebase-repo";
 import type { User, UserRole } from "@/lib/types";
+import { primaryRole } from "@/lib/types";
 
 export interface ActionState {
   error?: string;
 }
 
-function roleHome(role: string): string {
-  if (role === "ADMIN") return "/admin/verifikasi-barang";
-  if (role === "MITRA") return "/mitra/beranda";
+function roleHome(roles: UserRole[]): string {
+  const primary = primaryRole(roles);
+  if (primary === "ADMIN") return "/admin/verifikasi-barang";
+  if (primary === "MITRA") return "/mitra/beranda";
   return "/beranda";
 }
 
 async function setSessionCookie(payload: {
   userId: string;
-  role: "DONATUR" | "MITRA" | "ADMIN";
+  roles: UserRole[];
   name: string;
 }) {
   const token = await signSession(payload);
@@ -62,6 +64,7 @@ async function trySQLiteCreateUser(input: {
   passwordHash: string;
   phone?: string | null;
   role?: UserRole;
+  roles?: UserRole[];
   emailVerified?: boolean;
 }): Promise<User | null> {
   try {
@@ -136,7 +139,7 @@ export async function registerAction(
     latitude: null,
     longitude: null,
     avatarUrl: null,
-    role: "DONATUR",
+    roles: ["DONATUR"],
     emailVerified: false,
     notifyEmail: true,
     notifyInapp: true,
@@ -153,11 +156,11 @@ export async function registerAction(
     email,
     passwordHash,
     phone,
-    role: "DONATUR",
+    roles: ["DONATUR"],
     emailVerified: false,
   });
 
-  await setSessionCookie({ userId: newUser.id, role: newUser.role, name: newUser.name });
+  await setSessionCookie({ userId: newUser.id, roles: newUser.roles, name: newUser.name });
   redirect("/verifikasi-email");
 }
 
@@ -243,13 +246,13 @@ export async function loginAction(
   // Cache ke SQLite lokal juga (untuk dev, silently fail di production)
   await trySQLiteUpsertUser(user);
 
-  await setSessionCookie({ userId: user.id, role: user.role, name: user.name });
+  await setSessionCookie({ userId: user.id, roles: user.roles, name: user.name });
 
   const redirectTo = formData.get("redirectTo");
   if (typeof redirectTo === "string" && redirectTo.startsWith("/")) {
     redirect(redirectTo);
   }
-  redirect(roleHome(user.role));
+  redirect(roleHome(user.roles));
 }
 
 // ================================================================

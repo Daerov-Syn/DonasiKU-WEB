@@ -33,14 +33,21 @@ import type {
   PaymentStatus,
   PaymentMethod,
 } from "@/lib/types";
+import { primaryRole } from "@/lib/types";
 
 // ================================================================
 // FIELD MAPPERS: Firestore (mobile) → Web TypeScript
 // ================================================================
 
 function mapFirestoreToUser(docId: string, data: DocumentData): User {
-  const rawRole = (data.role || "DONATUR") as string;
-  const role = rawRole.toUpperCase() as UserRole;
+  // Read roles array, with fallback from single role field
+  let roles: UserRole[];
+  if (Array.isArray(data.roles) && data.roles.length > 0) {
+    roles = data.roles.map((r: string) => r.toUpperCase()) as UserRole[];
+  } else {
+    const rawRole = (data.role || "DONATUR") as string;
+    roles = [rawRole.toUpperCase() as UserRole];
+  }
 
   return {
     id: docId,
@@ -52,7 +59,7 @@ function mapFirestoreToUser(docId: string, data: DocumentData): User {
     latitude: data.latitude ?? null,
     longitude: data.longitude ?? null,
     avatarUrl: data.avatarUrl || data.profile_photo || null,
-    role,
+    roles,
     emailVerified: data.emailVerified ?? data.email_verified ?? false,
     notifyEmail: data.notifyEmail ?? data.notify_email ?? true,
     notifyInapp: data.notifyInapp ?? data.notify_inapp ?? true,
@@ -196,7 +203,8 @@ export async function saveFirebaseUser(user: User): Promise<void> {
       latitude: user.latitude,
       longitude: user.longitude,
       avatarUrl: user.avatarUrl,
-      role: user.role,
+      roles: user.roles,
+      role: primaryRole(user.roles), // backward compat for mobile
       emailVerified: user.emailVerified,
       notifyEmail: user.notifyEmail,
       notifyInapp: user.notifyInapp,

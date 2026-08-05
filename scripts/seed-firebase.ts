@@ -68,7 +68,7 @@ async function runFirebaseSeed() {
         address: "Jl. Semampir Indah No. 42, Surabaya",
         latitude: -7.2891,
         longitude: 112.7984,
-        role: "DONATUR",
+        roles: ["DONATUR"],
         avatarUrl: null,
         emailVerified: true,
         notifyEmail: true,

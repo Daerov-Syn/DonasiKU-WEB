@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import { SignJWT, jwtVerify } from "jose";
+import type { UserRole } from "@/lib/types";
 
 export const SESSION_COOKIE = "donasiku_session";
 export const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // 7 hari
@@ -10,7 +11,7 @@ const secret = new TextEncoder().encode(
 
 export interface SessionPayload {
   userId: string;
-  role: "DONATUR" | "MITRA" | "ADMIN";
+  roles: UserRole[];
   name: string;
 }
 
@@ -38,14 +39,19 @@ export async function verifySession(
 ): Promise<SessionPayload | null> {
   try {
     const { payload } = await jwtVerify(token, secret);
-    if (
-      typeof payload.userId === "string" &&
-      typeof payload.role === "string" &&
-      typeof payload.name === "string"
-    ) {
+    if (typeof payload.userId === "string" && typeof payload.name === "string") {
+      // Support both new `roles` array and old `role` string format
+      let roles: UserRole[];
+      if (Array.isArray(payload.roles)) {
+        roles = payload.roles as UserRole[];
+      } else if (typeof payload.role === "string") {
+        roles = [payload.role as UserRole];
+      } else {
+        return null;
+      }
       return {
         userId: payload.userId,
-        role: payload.role as SessionPayload["role"],
+        roles,
         name: payload.name,
       };
     }

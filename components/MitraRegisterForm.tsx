@@ -15,7 +15,14 @@ const AREA_PRESETS = [
   { label: "Sidoarjo", latitude: -7.4478, longitude: 112.7183 },
 ];
 
-export default function MitraRegisterForm() {
+interface MitraRegisterFormProps {
+  /** If true, user is already logged in — only show org fields (no email/password) */
+  isUpgrade?: boolean;
+  /** Display name of the logged-in user (shown as greeting) */
+  userName?: string;
+}
+
+export default function MitraRegisterForm({ isUpgrade = false, userName }: MitraRegisterFormProps) {
   const [state, formAction] = useActionState(registerMitraAction, initialState);
   const [areaIndex, setAreaIndex] = useState<number | null>(null);
   const area = areaIndex !== null ? AREA_PRESETS[areaIndex] : null;
@@ -24,38 +31,52 @@ export default function MitraRegisterForm() {
     <form action={formAction} className="space-y-4">
       <FormError message={state.error} />
 
-      <p className="text-xs font-semibold uppercase tracking-wide text-brand-gold">
-        Data penanggung jawab
-      </p>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <input
-          name="name"
-          placeholder="Nama penanggung jawab"
-          required
-          className="rounded-xl border border-brand-line px-4 py-2.5 text-sm outline-none focus:border-brand-forest focus:ring-2 focus:ring-brand-forest/20"
-        />
-        <input
-          name="phone"
-          placeholder="Nomor HP"
-          required
-          className="rounded-xl border border-brand-line px-4 py-2.5 text-sm outline-none focus:border-brand-forest focus:ring-2 focus:ring-brand-forest/20"
-        />
-        <input
-          type="email"
-          name="email"
-          placeholder="Email"
-          required
-          className="rounded-xl border border-brand-line px-4 py-2.5 text-sm outline-none focus:border-brand-forest focus:ring-2 focus:ring-brand-forest/20"
-        />
-        <input
-          type="password"
-          name="password"
-          placeholder="Password (min. 6 karakter)"
-          required
-          minLength={6}
-          className="rounded-xl border border-brand-line px-4 py-2.5 text-sm outline-none focus:border-brand-forest focus:ring-2 focus:ring-brand-forest/20"
-        />
-      </div>
+      {isUpgrade && userName && (
+        <div className="rounded-2xl bg-purple-50 border border-purple-100 p-4 text-sm text-purple-800">
+          <p className="font-semibold">👋 Halo, {userName}!</p>
+          <p className="mt-1 text-xs text-purple-600">
+            Anda akan menambahkan peran Mitra ke akun yang sudah ada. Data login tetap sama.
+          </p>
+        </div>
+      )}
+
+      {/* Only show personal data fields if NOT upgrading */}
+      {!isUpgrade && (
+        <>
+          <p className="text-xs font-semibold uppercase tracking-wide text-brand-gold">
+            Data penanggung jawab
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <input
+              name="name"
+              placeholder="Nama penanggung jawab"
+              required
+              className="rounded-xl border border-brand-line px-4 py-2.5 text-sm outline-none focus:border-brand-forest focus:ring-2 focus:ring-brand-forest/20"
+            />
+            <input
+              name="phone"
+              placeholder="Nomor HP"
+              required
+              className="rounded-xl border border-brand-line px-4 py-2.5 text-sm outline-none focus:border-brand-forest focus:ring-2 focus:ring-brand-forest/20"
+            />
+            <input
+              type="email"
+              name="email"
+              placeholder="Email"
+              required
+              className="rounded-xl border border-brand-line px-4 py-2.5 text-sm outline-none focus:border-brand-forest focus:ring-2 focus:ring-brand-forest/20"
+            />
+            <input
+              type="password"
+              name="password"
+              placeholder="Password (min. 6 karakter)"
+              required
+              minLength={6}
+              className="rounded-xl border border-brand-line px-4 py-2.5 text-sm outline-none focus:border-brand-forest focus:ring-2 focus:ring-brand-forest/20"
+            />
+          </div>
+        </>
+      )}
 
       <p className="pt-2 text-xs font-semibold uppercase tracking-wide text-brand-gold">
         Data lembaga
@@ -129,8 +150,8 @@ export default function MitraRegisterForm() {
         />
       </div>
 
-      <SubmitButton className="w-full" pendingText="Mendaftarkan...">
-        Daftar sebagai Mitra
+      <SubmitButton className="w-full" pendingText={isUpgrade ? "Menambahkan role mitra..." : "Mendaftarkan..."}>
+        {isUpgrade ? "Tambahkan Role Mitra" : "Daftar sebagai Mitra"}
       </SubmitButton>
       <p className="text-center text-xs text-brand-ink-soft">
         Akun mitra Anda akan aktif setelah diverifikasi oleh tim Admin DonasiKu.

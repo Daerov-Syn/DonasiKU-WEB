@@ -9,7 +9,7 @@ import type { ShippingMethod } from "@/lib/types";
 
 export default async function AdminVerifikasiBarangPage() {
   const user = await getCurrentUser();
-  if (!user || user.role !== "ADMIN") redirect("/login");
+  if (!user || !user.roles.includes("ADMIN")) redirect("/login");
 
   const items = listPendingVerificationItems();
 

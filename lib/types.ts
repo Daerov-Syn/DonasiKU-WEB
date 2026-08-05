@@ -26,13 +26,26 @@ export interface User {
   latitude: number | null;
   longitude: number | null;
   avatarUrl: string | null;
-  role: UserRole;
+  roles: UserRole[];
   emailVerified: boolean;
   notifyEmail: boolean;
   notifyInapp: boolean;
   createdAt: string;
   updatedAt: string;
 }
+
+/** Check if a user has a specific role */
+export function hasRole(user: { roles: UserRole[] }, role: UserRole): boolean {
+  return user.roles.includes(role);
+}
+
+/** Get the primary (highest-priority) role: ADMIN > MITRA > DONATUR */
+export function primaryRole(roles: UserRole[]): UserRole {
+  if (roles.includes("ADMIN")) return "ADMIN";
+  if (roles.includes("MITRA")) return "MITRA";
+  return "DONATUR";
+}
+
 
 export interface MitraProfile {
   id: string;
