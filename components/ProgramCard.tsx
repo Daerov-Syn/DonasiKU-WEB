@@ -3,6 +3,8 @@ import Image from "next/image";
 import { MapPin, Package, Wallet, ArrowRight } from "lucide-react";
 import type { Program } from "@/lib/types";
 
+import SafeImage from "@/components/SafeImage";
+
 // Compatible with both repo.ProgramCardData and unified-repo.UnifiedProgramCardData
 interface ProgramCardData extends Program {
   mitraName: string;
@@ -24,23 +26,11 @@ export default function ProgramCard({ program }: { program: ProgramCardData }) {
   return (
     <div className="group flex flex-col overflow-hidden rounded-3xl border border-brand-line bg-white shadow-sm transition-shadow hover:shadow-md">
       <div className="relative h-36 w-full overflow-hidden bg-linear-to-br from-brand-forest-light/30 via-brand-forest/20 to-brand-gold/20">
-        {program.coverImageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={program.coverImageUrl}
-            alt={program.title}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=800&q=80";
-            }}
-          />
-        ) : (
-          <img
-            src="https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=800&q=80"
-            alt={program.title}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
-        )}
+        <SafeImage
+          src={program.coverImageUrl || undefined}
+          alt={program.title}
+          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+        />
         <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/90 px-3 py-1 text-[11px] font-semibold text-brand-forest-dark shadow-sm">
           {program.type === "BARANG" && <Package size={12} />}
           {program.type === "UANG" && <Wallet size={12} />}

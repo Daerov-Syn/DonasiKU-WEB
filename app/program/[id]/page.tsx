@@ -3,6 +3,7 @@ import Link from "next/link";
 
 import { MapPin, Package, Wallet, ArrowLeft } from "lucide-react";
 import { getProgramByIdUnified } from "@/lib/unified-repo";
+import SafeImage from "@/components/SafeImage";
 
 function formatRupiah(n: number): string {
   return `Rp${n.toLocaleString("id-ID")}`;
@@ -32,14 +33,10 @@ export default async function ProgramDetailPage({
       </Link>
 
       <div className="mt-5 h-52 w-full overflow-hidden rounded-3xl bg-slate-100 sm:h-72">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={program.coverImageUrl || "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=800&q=80"}
+        <SafeImage
+          src={program.coverImageUrl || undefined}
           alt={program.title}
           className="h-full w-full object-cover"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&w=800&q=80";
-          }}
         />
       </div>
 
