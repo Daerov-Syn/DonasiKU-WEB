@@ -238,6 +238,29 @@ export async function getFirebaseMitraProfileByUserId(userId: string): Promise<M
   }
 }
 
+export async function saveFirebaseMitraProfile(mitra: MitraProfile): Promise<void> {
+  try {
+    const docRef = doc(db, "mitra_profiles", mitra.id);
+    await setDoc(docRef, {
+      userId: mitra.userId,
+      orgName: mitra.orgName,
+      orgType: mitra.orgType,
+      description: mitra.description,
+      legalDocsUrl: mitra.legalDocsUrl,
+      latitude: mitra.latitude,
+      longitude: mitra.longitude,
+      address: mitra.address,
+      verified: mitra.verified,
+      createdAt: mitra.createdAt,
+      user_id: mitra.userId, // fallback for mobile compatibility
+      org_name: mitra.orgName,
+      org_type: mitra.orgType,
+    }, { merge: true });
+  } catch (e) {
+    console.warn("[firebase-repo] saveFirebaseMitraProfile error:", e);
+  }
+}
+
 // ================================================================
 // CATEGORIES
 // ================================================================

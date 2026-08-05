@@ -28,8 +28,8 @@ import {
 } from "@/lib/repo";
 import { generateCertificateNumber } from "@/lib/certificate";
 import { syncUserToFirestore } from "@/lib/firebase-sync";
-import { saveFirebaseUser } from "@/lib/firebase-repo";
-import type { ItemStatus, UserRole, User } from "@/lib/types";
+import { saveFirebaseUser, saveFirebaseMitraProfile } from "@/lib/firebase-repo";
+import type { ItemStatus, UserRole, User, MitraProfile, Program } from "@/lib/types";
 import { primaryRole } from "@/lib/types";
 
 export interface ActionState {
@@ -85,17 +85,39 @@ export async function registerMitraAction(
     await saveFirebaseUser(updatedUser);
 
     // Create mitra profile
-    createMitraProfile({
+    let mitraProfile: MitraProfile = {
+      id: currentUser.id,
       userId: currentUser.id,
       orgName: parsed.data.orgName,
       orgType: parsed.data.orgType,
       description: parsed.data.description ?? null,
-      legalDocsUrl,
+      legalDocsUrl: legalDocsUrl ?? null,
       latitude: parsed.data.latitude,
       longitude: parsed.data.longitude,
       address: parsed.data.address,
       verified: false,
-    });
+      createdAt: new Date().toISOString(),
+    };
+
+    try {
+      const created = createMitraProfile({
+        userId: currentUser.id,
+        orgName: parsed.data.orgName,
+        orgType: parsed.data.orgType,
+        description: parsed.data.description ?? null,
+        legalDocsUrl,
+        latitude: parsed.data.latitude,
+        longitude: parsed.data.longitude,
+        address: parsed.data.address,
+        verified: false,
+      });
+      mitraProfile = created;
+    } catch (e) {
+      console.warn("SQLite createMitraProfile failed, using in-memory object", e);
+    }
+
+    // Force sync to Firebase
+    await saveFirebaseMitraProfile(mitraProfile);
 
     // Refresh session with updated roles
     const token = await signSession({
@@ -143,25 +165,76 @@ export async function registerMitraAction(
   }
 
   const passwordHash = await hashPassword(parsed.data.password);
-  const user = createUser({
+  
+  // Prepare user object in memory
+  let user: User = {
+    id: crypto.randomUUID(),
     name: parsed.data.name,
     email: parsed.data.email,
     passwordHash,
-    phone: parsed.data.phone,
+    phone: parsed.data.phone || null,
     roles: ["MITRA"],
     emailVerified: true,
-  });
-  createMitraProfile({
+    address: null,
+    latitude: null,
+    longitude: null,
+    avatarUrl: null,
+    notifyEmail: true,
+    notifyInapp: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  try {
+    const created = createUser({
+      name: parsed.data.name,
+      email: parsed.data.email,
+      passwordHash,
+      phone: parsed.data.phone,
+      roles: ["MITRA"],
+      emailVerified: true,
+    });
+    user = created;
+  } catch (e) {
+    console.warn("SQLite createUser failed, using in-memory object", e);
+  }
+  
+  // Force sync to Firebase
+  await saveFirebaseUser(user);
+
+  let mitraProfile: MitraProfile = {
+    id: user.id, // Using userId as mitraId for convenience
     userId: user.id,
     orgName: parsed.data.orgName,
     orgType: parsed.data.orgType,
     description: parsed.data.description ?? null,
-    legalDocsUrl,
+    legalDocsUrl: legalDocsUrl ?? null,
     latitude: parsed.data.latitude,
     longitude: parsed.data.longitude,
     address: parsed.data.address,
     verified: false,
-  });
+    createdAt: new Date().toISOString(),
+  };
+
+  try {
+    const created = createMitraProfile({
+      userId: user.id,
+      orgName: parsed.data.orgName,
+      orgType: parsed.data.orgType,
+      description: parsed.data.description ?? null,
+      legalDocsUrl,
+      latitude: parsed.data.latitude,
+      longitude: parsed.data.longitude,
+      address: parsed.data.address,
+      verified: false,
+    });
+    mitraProfile = created;
+  } catch (e) {
+    console.warn("SQLite createMitraProfile failed, using in-memory object", e);
+  }
+  
+  // Force sync to Firebase
+  await saveFirebaseMitraProfile(mitraProfile);
 
   const token = await signSession({ userId: user.id, roles: user.roles, name: user.name });
   const cookieStore = await cookies();
@@ -209,19 +282,41 @@ export async function createProgramAction(
     coverImageUrl = await saveUploadedFile(coverFile, "program_images");
   }
 
-  const program = createProgram({
+  let program: Program = {
+    id: crypto.randomUUID(),
     mitraId: mitra.id,
     title: parsed.data.title,
     description: parsed.data.description,
     type: parsed.data.type,
-    targetAmount:
-      parsed.data.type === "BARANG" ? null : parsed.data.targetAmount ?? null,
-    coverImageUrl,
+    targetAmount: parsed.data.type === "BARANG" ? null : parsed.data.targetAmount ?? null,
+    collectedAmount: 0,
+    coverImageUrl: coverImageUrl || null,
     status: "menunggu_verifikasi",
-  });
-  for (const catId of parsed.data.categoryIds) {
-    addProgramNeededCategory(program.id, catId, 3);
+    createdAt: new Date().toISOString(),
+  };
+
+  try {
+    const created = createProgram({
+      mitraId: mitra.id,
+      title: parsed.data.title,
+      description: parsed.data.description,
+      type: parsed.data.type,
+      targetAmount:
+        parsed.data.type === "BARANG" ? null : parsed.data.targetAmount ?? null,
+      coverImageUrl,
+      status: "menunggu_verifikasi",
+    });
+    program = created;
+    for (const catId of parsed.data.categoryIds) {
+      addProgramNeededCategory(program.id, catId, 3);
+    }
+  } catch (e) {
+    console.warn("SQLite createProgram failed, using in-memory object", e);
   }
+
+  // Force sync to Firebase
+  const { syncProgramToFirestore } = await import("@/lib/firebase-sync");
+  await syncProgramToFirestore(program);
 
   revalidatePath("/mitra/beranda");
   redirect("/mitra/beranda");
