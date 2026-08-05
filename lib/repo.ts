@@ -593,9 +593,25 @@ export function addProgramNeededCategory(
   categoryId: string,
   urgency: number
 ): void {
-  db.prepare(
-    `INSERT INTO program_needed_categories (id, program_id, category_id, urgency) VALUES (?, ?, ?, ?)`
-  ).run(randomUUID(), programId, categoryId, urgency);
+  try {
+    // Ensure category exists to satisfy foreign key constraint
+    const existingCategory = db.prepare("SELECT id FROM categories WHERE id = ?").get(categoryId);
+    if (!existingCategory) {
+      db.prepare(
+        `INSERT OR IGNORE INTO categories (id, name, type, icon) VALUES (?, ?, ?, ?)`
+      ).run(categoryId, `Kategori ${categoryId}`, "BARANG", "Box");
+    }
+  } catch (e) {
+    console.warn("[repo] addProgramNeededCategory category check error:", e);
+  }
+
+  try {
+    db.prepare(
+      `INSERT INTO program_needed_categories (id, program_id, category_id, urgency) VALUES (?, ?, ?, ?)`
+    ).run(randomUUID(), programId, categoryId, urgency);
+  } catch (e) {
+    console.warn("[repo] addProgramNeededCategory insert error:", e);
+  }
 }
 
 export function listProgramNeededCategories(
