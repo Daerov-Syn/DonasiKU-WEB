@@ -16,7 +16,6 @@ const GUEST_ONLY_PATHS = ["/login", "/register"];
 
 function roleHome(roles: UserRole[]): string {
   if (roles.includes("ADMIN")) return "/admin/verifikasi-barang";
-  if (roles.includes("MITRA")) return "/mitra/beranda";
   return "/beranda";
 }
 

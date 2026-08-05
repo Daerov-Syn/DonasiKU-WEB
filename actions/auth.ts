@@ -24,9 +24,7 @@ export interface ActionState {
 }
 
 function roleHome(roles: UserRole[]): string {
-  const primary = primaryRole(roles);
-  if (primary === "ADMIN") return "/admin/verifikasi-barang";
-  if (primary === "MITRA") return "/mitra/beranda";
+  if (roles.includes("ADMIN")) return "/admin/verifikasi-barang";
   return "/beranda";
 }
 
