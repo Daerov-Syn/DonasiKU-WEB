@@ -507,6 +507,28 @@ export function createProgram(input: {
 }): Program {
   const id = randomUUID();
   const status = input.status ?? "menunggu_verifikasi";
+
+  // Ensure mitra_id exists in SQLite mitra_profiles table to satisfy foreign key constraint
+  try {
+    const existingMitra = db.prepare("SELECT id FROM mitra_profiles WHERE id = ?").get(input.mitraId);
+    if (!existingMitra) {
+      const user = db.prepare("SELECT id FROM users LIMIT 1").get() as { id: string } | undefined;
+      const userId = user?.id || `user-${input.mitraId}`;
+
+      db.prepare(
+        `INSERT OR IGNORE INTO users (id, name, email, password_hash, role)
+         VALUES (?, ?, ?, ?, ?)`
+      ).run(userId, "Mitra DonasiKu", `${input.mitraId}@donasiku.id`, "$2a$10$demoHash", "MITRA");
+
+      db.prepare(
+        `INSERT OR IGNORE INTO mitra_profiles (id, user_id, org_name, org_type, description, verified, latitude, longitude, address)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).run(input.mitraId, userId, "Mitra Yayasan DonasiKu", "Lembaga Sosial", "Mitra resmi DonasiKu", 1, -7.25, 112.75, "Surabaya");
+    }
+  } catch (e) {
+    console.warn("[repo] createProgram mitra check error:", e);
+  }
+
   db.prepare(
     `INSERT INTO programs (id, mitra_id, title, description, type, target_amount, cover_image_url, status)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`

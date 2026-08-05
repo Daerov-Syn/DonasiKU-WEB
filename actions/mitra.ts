@@ -206,7 +206,7 @@ export async function createProgramAction(
   let coverImageUrl: string | undefined;
   const coverFile = formData.get("coverImage");
   if (coverFile instanceof File && coverFile.size > 0) {
-    coverImageUrl = await saveUploadedFile(coverFile, "program");
+    coverImageUrl = await saveUploadedFile(coverFile, "program_images");
   }
 
   const program = createProgram({
