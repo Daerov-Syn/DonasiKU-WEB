@@ -1,12 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
-import {
-  getFirebaseMitraProfileByUserId,
-} from "@/lib/firebase-repo";
-import {
-  getActivePrograms,
-} from "@/lib/unified-repo";
-import { FALLBACK_MITRAS } from "@/lib/hardcoded-data";
+import { getMitraProfileUnified, getActivePrograms } from "@/lib/unified-repo";
 import type { MitraProfile, Program } from "@/lib/types";
 import {
   collection,
@@ -17,36 +11,21 @@ import {
 import { db as firestoreDb } from "@/lib/firebase";
 import MitraDashboardClient from "@/components/MitraDashboardClient";
 
-async function getMitraProfile(userId: string): Promise<MitraProfile | null> {
-  // 1. Firestore
-  try {
-    const fbMitra = await getFirebaseMitraProfileByUserId(userId);
-    if (fbMitra) return fbMitra;
-  } catch (e) {
-    console.warn("[mitra-beranda] Firestore mitra lookup failed:", e);
-  }
-
-  // 2. SQLite (dev only)
-  try {
-    const { getMitraProfileByUserId } = await import("@/lib/repo");
-    const localMitra = getMitraProfileByUserId(userId);
-    if (localMitra) return localMitra;
-  } catch {
-    // SQLite unavailable
-  }
-
-  // 3. Fallback hardcoded
-  return FALLBACK_MITRAS.find((m) => m.userId === userId) ?? null;
-}
-
 async function getProgramsByMitra(mitraId: string): Promise<Program[]> {
   // 1. Firestore
   try {
-    const q = query(
+    let q = query(
       collection(firestoreDb, "programs"),
       where("mitraId", "==", mitraId)
     );
-    const snap = await getDocs(q);
+    let snap = await getDocs(q);
+    if (snap.empty) {
+      q = query(
+        collection(firestoreDb, "programs"),
+        where("mitra_id", "==", mitraId)
+      );
+      snap = await getDocs(q);
+    }
     if (!snap.empty) {
       return snap.docs.map((d) => {
         const data = d.data();
@@ -83,11 +62,12 @@ async function getProgramsByMitra(mitraId: string): Promise<Program[]> {
 
 export default async function MitraBerandaPage() {
   const user = await getCurrentUser();
-  if (!user || !user.roles.includes("MITRA")) redirect("/login");
+  if (!user || (!user.roles.includes("MITRA") && !user.roles.includes("ADMIN"))) {
+    redirect("/login");
+  }
 
-  let mitra = await getMitraProfile(user.id);
+  let mitra = await getMitraProfileUnified(user.id);
 
-  // If no mitra profile found in database, construct a fallback profile using the user's details
   if (!mitra) {
     mitra = {
       id: `mitra-${user.id}`,

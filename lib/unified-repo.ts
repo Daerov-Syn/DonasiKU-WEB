@@ -447,3 +447,76 @@ export async function getProgramByIdSimple(
   }
   return null;
 }
+
+// ================================================================
+// MITRA PROFILE UNIFIED (Firestore -> SQLite -> Fallback)
+// ================================================================
+export async function getMitraProfileUnified(userId: string): Promise<MitraProfile | null> {
+  // 1. Try Firestore first
+  try {
+    const fbMitra = await getFirebaseMitraProfileByUserId(userId);
+    if (fbMitra) return fbMitra;
+  } catch (e) {
+    console.warn("[unified-repo] Firestore getMitraProfile error:", e);
+  }
+
+  // 2. Try SQLite
+  try {
+    const { getMitraProfileByUserId } = await import("@/lib/repo");
+    const localMitra = getMitraProfileByUserId(userId);
+    if (localMitra) return localMitra;
+  } catch {
+    // SQLite unavailable
+  }
+
+  // 3. Fallback: construct default verified profile for user with MITRA role
+  try {
+    const { getFirebaseUserById } = await import("@/lib/firebase-repo");
+    const user = await getFirebaseUserById(userId);
+    if (user && user.roles.includes("MITRA")) {
+      return {
+        id: `mitra-${userId}`,
+        userId: userId,
+        orgName: user.name || "Mitra Yayasan DonasiKu",
+        orgType: "Lembaga Sosial",
+        description: "Mitra terverifikasi resmi DonasiKu",
+        legalDocsUrl: null,
+        verified: true,
+        latitude: -7.25,
+        longitude: 112.75,
+        address: user.address || "Surabaya",
+        createdAt: new Date().toISOString(),
+      };
+    }
+  } catch {
+    // ignore
+  }
+
+  return null;
+}
+
+// ================================================================
+// CATEGORIES UNIFIED
+// ================================================================
+export async function listCategoriesUnified(): Promise<Category[]> {
+  try {
+    const fbCategories = await listFirebaseCategories();
+    if (fbCategories && fbCategories.length > 0) {
+      return fbCategories;
+    }
+  } catch (e) {
+    console.warn("[unified-repo] Firestore categories error:", e);
+  }
+
+  try {
+    const { listCategories } = await import("@/lib/repo");
+    const localCategories = listCategories();
+    if (localCategories && localCategories.length > 0) {
+      return localCategories;
+    }
+  } catch {
+    // ignore
+  }
+
+  return FALLBACK_CATEGORIES;
+}

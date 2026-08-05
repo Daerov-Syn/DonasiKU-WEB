@@ -182,7 +182,8 @@ export async function createProgramAction(
 ): Promise<ActionState> {
   const user = await getCurrentUser();
   if (!user || !user.roles.includes("MITRA")) redirect("/login");
-  const mitra = getMitraProfileByUserId(user.id);
+  const { getMitraProfileUnified } = await import("@/lib/unified-repo");
+  const mitra = await getMitraProfileUnified(user.id);
   if (!mitra) return { error: "Profil mitra tidak ditemukan." };
   if (!mitra.verified) {
     return {

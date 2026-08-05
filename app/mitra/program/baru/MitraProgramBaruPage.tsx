@@ -1,15 +1,15 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
-import { getMitraProfileByUserId, listCategories } from "@/lib/repo";
+import { getMitraProfileUnified, listCategoriesUnified } from "@/lib/unified-repo";
 import CreateProgramForm from "@/components/CreateProgramForm";
 
 export default async function BuatProgramPage() {
   const user = await getCurrentUser();
   if (!user || !user.roles.includes("MITRA")) redirect("/login");
-  const mitra = getMitraProfileByUserId(user.id);
+  const mitra = await getMitraProfileUnified(user.id);
   if (!mitra) redirect("/login");
 
-  const categories = listCategories();
+  const categories = await listCategoriesUnified();
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-10">
