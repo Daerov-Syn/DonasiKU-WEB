@@ -520,3 +520,144 @@ export async function listCategoriesUnified(): Promise<Category[]> {
 
   return FALLBACK_CATEGORIES;
 }
+
+// ================================================================
+// ADMIN & EXTRA UNIFIED QUERIES
+// ================================================================
+
+export async function listAllProgramsUnified(): Promise<
+  (Program & { mitraName: string; mitraOrgType: string })[]
+> {
+  try {
+    const { listFirebaseAllPrograms } = await import("@/lib/firebase-repo");
+    const fbList = await listFirebaseAllPrograms();
+    if (fbList && fbList.length > 0) {
+      return fbList.map((p) => ({
+        ...p,
+        mitraName: "Mitra DonasiKu",
+        mitraOrgType: "Lembaga Sosial",
+      }));
+    }
+  } catch (e) {
+    console.warn("[unified-repo] Firestore all programs error:", e);
+  }
+
+  try {
+    const { listAllProgramsForAdmin } = await import("@/lib/repo");
+    return listAllProgramsForAdmin();
+  } catch {
+    return [];
+  }
+}
+
+export async function listPendingProgramsUnified(): Promise<
+  (Program & { mitraName: string; mitraOrgType: string })[]
+> {
+  try {
+    const { listFirebasePendingPrograms } = await import("@/lib/firebase-repo");
+    const fbList = await listFirebasePendingPrograms();
+    if (fbList && fbList.length > 0) {
+      return fbList.map((p) => ({
+        ...p,
+        mitraName: "Mitra DonasiKu",
+        mitraOrgType: "Lembaga Sosial",
+      }));
+    }
+  } catch (e) {
+    console.warn("[unified-repo] Firestore pending programs error:", e);
+  }
+
+  try {
+    const { listPendingPrograms } = await import("@/lib/repo");
+    return listPendingPrograms();
+  } catch {
+    return [];
+  }
+}
+
+export async function listAllDonationItemsForAdminUnified(): Promise<
+  (DonationItem & { donorName: string; categoryName: string; mitraName: string | null })[]
+> {
+  try {
+    const { listFirebaseAllDonationItems } = await import("@/lib/firebase-repo");
+    const fbList = await listFirebaseAllDonationItems();
+    if (fbList && fbList.length > 0) {
+      return fbList.map((item) => ({
+        ...item,
+        donorName: item.senderName || "Donatur Dermawan",
+        categoryName: "Kebutuhan Barang",
+        mitraName: "Mitra DonasiKu",
+      }));
+    }
+  } catch (e) {
+    console.warn("[unified-repo] Firestore all donation items error:", e);
+  }
+
+  try {
+    const { listAllDonationItemsForAdmin } = await import("@/lib/repo");
+    return listAllDonationItemsForAdmin();
+  } catch {
+    return [];
+  }
+}
+
+export async function listPendingMitraProfilesUnified(): Promise<
+  (MitraProfile & { contactName: string; contactEmail: string })[]
+> {
+  try {
+    const { listFirebasePendingMitraProfiles } = await import("@/lib/firebase-repo");
+    const fbList = await listFirebasePendingMitraProfiles();
+    if (fbList && fbList.length > 0) {
+      return fbList.map((m) => ({
+        ...m,
+        contactName: m.orgName,
+        contactEmail: "mitra@donasiku.id",
+      }));
+    }
+  } catch (e) {
+    console.warn("[unified-repo] Firestore pending mitra error:", e);
+  }
+
+  try {
+    const { listPendingMitraProfiles } = await import("@/lib/repo");
+    return listPendingMitraProfiles();
+  } catch {
+    return [];
+  }
+}
+
+export async function listVerifiedMitraProfilesUnified(): Promise<MitraProfile[]> {
+  try {
+    const { listFirebaseVerifiedMitraProfiles } = await import("@/lib/firebase-repo");
+    const fbList = await listFirebaseVerifiedMitraProfiles();
+    if (fbList && fbList.length > 0) return fbList;
+  } catch (e) {
+    console.warn("[unified-repo] Firestore verified mitra error:", e);
+  }
+
+  try {
+    const { listVerifiedMitraProfiles } = await import("@/lib/repo");
+    return listVerifiedMitraProfiles();
+  } catch {
+    return [];
+  }
+}
+
+export async function listNotificationsByUserUnified(userId: string): Promise<any[]> {
+  try {
+    const { listFirebaseNotificationsByUser } = await import("@/lib/firebase-repo");
+    const fbList = await listFirebaseNotificationsByUser(userId);
+    if (fbList && fbList.length > 0) return fbList;
+  } catch (e) {
+    console.warn("[unified-repo] Firestore notifications error:", e);
+  }
+
+  try {
+    const { listNotificationsByUser } = await import("@/lib/repo");
+    return listNotificationsByUser(userId);
+  } catch {
+    return [];
+  }
+}
+
+

@@ -1,14 +1,14 @@
 import { redirect } from "next/navigation";
 import { MapPin } from "lucide-react";
 import { getCurrentUser } from "@/lib/session";
-import { listPendingMitraProfiles } from "@/lib/repo";
+import { listPendingMitraProfilesUnified } from "@/lib/unified-repo";
 import { approveMitraAction, rejectMitraAction } from "@/actions/admin";
 
 export default async function AdminVerifikasiMitraPage() {
   const user = await getCurrentUser();
   if (!user || !user.roles.includes("ADMIN")) redirect("/login");
 
-  const pending = listPendingMitraProfiles();
+  const pending = await listPendingMitraProfilesUnified();
 
   return (
     <div className="mx-auto max-w-4xl px-5 py-10">

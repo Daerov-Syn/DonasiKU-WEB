@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { Bell, Package, Wallet, Award, Megaphone } from "lucide-react";
 import { getCurrentUser } from "@/lib/session";
-import { listNotificationsByUser } from "@/lib/repo";
+import { listNotificationsByUserUnified } from "@/lib/unified-repo";
 import { markAllReadAction } from "@/actions/notifikasi";
 
 function formatDateTime(iso: string): string {
@@ -25,7 +25,7 @@ export default async function NotifikasiPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const notifications = listNotificationsByUser(user.id, 50);
+  const notifications = await listNotificationsByUserUnified(user.id);
 
   return (
     <div className="mx-auto max-w-2xl px-5 py-10">

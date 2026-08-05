@@ -1,16 +1,21 @@
-import { listVerifiedMitraProfiles, listProgramsByMitra } from "@/lib/repo";
+import { listVerifiedMitraProfilesUnified, getActivePrograms } from "@/lib/unified-repo";
 import MapViewLoader from "@/components/MapViewLoader";
 
-export default function PetaPage() {
-  const mitras = listVerifiedMitraProfiles().map((m) => ({
+export default async function PetaPage() {
+  const [mitraList, activePrograms] = await Promise.all([
+    listVerifiedMitraProfilesUnified(),
+    getActivePrograms(),
+  ]);
+
+  const mitras = mitraList.map((m) => ({
     id: m.id,
     orgName: m.orgName,
     orgType: m.orgType,
     address: m.address,
     latitude: m.latitude,
     longitude: m.longitude,
-    programs: listProgramsByMitra(m.id)
-      .filter((p) => p.status === "aktif")
+    programs: activePrograms
+      .filter((p) => p.mitraId === m.id)
       .map((p) => ({ id: p.id, title: p.title })),
   }));
 

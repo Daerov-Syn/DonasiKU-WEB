@@ -32,6 +32,7 @@ import type {
   ProgramType,
   PaymentStatus,
   PaymentMethod,
+  Notification as AppNotification,
 } from "@/lib/types";
 import { primaryRole } from "@/lib/types";
 
@@ -486,3 +487,93 @@ export async function getFirebaseCertificateByDonationMoneyId(moneyId: string): 
     return null;
   }
 }
+
+// ================================================================
+// ADMIN & EXTRA QUERIES
+// ================================================================
+
+export async function listFirebaseAllPrograms(): Promise<Program[]> {
+  try {
+    const querySnap = await getDocs(collection(db, "programs"));
+    return querySnap.docs.map((d: QueryDocumentSnapshot<DocumentData>) =>
+      mapFirestoreToProgram(d.id, d.data())
+    );
+  } catch (e) {
+    console.warn("[firebase-repo] listFirebaseAllPrograms error:", e);
+    return [];
+  }
+}
+
+export async function listFirebasePendingPrograms(): Promise<Program[]> {
+  try {
+    const q = query(collection(db, "programs"), where("status", "==", "menunggu_verifikasi"));
+    const querySnap = await getDocs(q);
+    return querySnap.docs.map((d: QueryDocumentSnapshot<DocumentData>) =>
+      mapFirestoreToProgram(d.id, d.data())
+    );
+  } catch (e) {
+    console.warn("[firebase-repo] listFirebasePendingPrograms error:", e);
+    return [];
+  }
+}
+
+export async function listFirebaseAllDonationItems(): Promise<DonationItem[]> {
+  try {
+    const querySnap = await getDocs(collection(db, "donation_items"));
+    return querySnap.docs.map((d: QueryDocumentSnapshot<DocumentData>) =>
+      mapFirestoreToDonationItem(d.id, d.data())
+    );
+  } catch (e) {
+    console.warn("[firebase-repo] listFirebaseAllDonationItems error:", e);
+    return [];
+  }
+}
+
+export async function listFirebasePendingMitraProfiles(): Promise<MitraProfile[]> {
+  try {
+    const q = query(collection(db, "mitra_profiles"), where("verified", "==", false));
+    const querySnap = await getDocs(q);
+    return querySnap.docs.map((d: QueryDocumentSnapshot<DocumentData>) =>
+      mapFirestoreToMitra(d.id, d.data())
+    );
+  } catch (e) {
+    console.warn("[firebase-repo] listFirebasePendingMitraProfiles error:", e);
+    return [];
+  }
+}
+
+export async function listFirebaseVerifiedMitraProfiles(): Promise<MitraProfile[]> {
+  try {
+    const q = query(collection(db, "mitra_profiles"), where("verified", "==", true));
+    const querySnap = await getDocs(q);
+    return querySnap.docs.map((d: QueryDocumentSnapshot<DocumentData>) =>
+      mapFirestoreToMitra(d.id, d.data())
+    );
+  } catch (e) {
+    console.warn("[firebase-repo] listFirebaseVerifiedMitraProfiles error:", e);
+    return [];
+  }
+}
+
+export async function listFirebaseNotificationsByUser(userId: string): Promise<AppNotification[]> {
+  try {
+    const q = query(collection(db, "notifications"), where("userId", "==", userId));
+    const querySnap = await getDocs(q);
+    return querySnap.docs.map((d: QueryDocumentSnapshot<DocumentData>) => {
+      const data = d.data();
+      return {
+        id: d.id,
+        userId: data.userId || data.user_id || userId,
+        type: data.type || "program_baru",
+        message: data.message || data.pesan || "",
+        isRead: Boolean(data.isRead ?? data.dibaca ?? false),
+        createdAt: data.createdAt || new Date().toISOString(),
+      };
+    });
+  } catch (e) {
+    console.warn("[firebase-repo] listFirebaseNotificationsByUser error:", e);
+    return [];
+  }
+}
+
+

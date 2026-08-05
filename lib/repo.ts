@@ -450,10 +450,24 @@ export function listPendingMitraProfiles(): (MitraProfile & {
 }
 
 export function setMitraVerified(id: string, verified: boolean): void {
-  db.prepare("UPDATE mitra_profiles SET verified = ? WHERE id = ?").run(
-    verified ? 1 : 0,
-    id
-  );
+  try {
+    db.prepare("UPDATE mitra_profiles SET verified = ? WHERE id = ?").run(
+      verified ? 1 : 0,
+      id
+    );
+  } catch (e) {
+    console.warn("[repo] setMitraVerified SQLite error:", e);
+  }
+
+  try {
+    const { saveFirebaseMitraProfile, getFirebaseMitraProfileByUserId } = require("./firebase-repo");
+    const mp = getMitraProfileById(id);
+    if (mp) {
+      saveFirebaseMitraProfile({ ...mp, verified });
+    }
+  } catch {
+    // silently fail
+  }
 }
 
 /* ------------------------------------------------------------------ */
