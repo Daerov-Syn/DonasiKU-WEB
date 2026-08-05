@@ -81,52 +81,64 @@ export async function getActivePrograms(filter?: {
   try {
     const fbPrograms = await listFirebaseActivePrograms(filter);
     
-    // Enrich with mitra data from Firestore
-    const enriched: UnifiedProgramCardData[] = await Promise.all(
-      fbPrograms.map(async (p) => {
-        let mitraName = "Mitra DonasiKu";
-        let mitraOrgType = "Organisasi Sosial";
-        let mitraAddress = "Surabaya";
+    if (fbPrograms && fbPrograms.length > 0) {
+      // Enrich with mitra data from Firestore
+      const enriched: UnifiedProgramCardData[] = await Promise.all(
+        fbPrograms.map(async (p) => {
+          let mitraName = "Mitra DonasiKu";
+          let mitraOrgType = "Organisasi Sosial";
+          let mitraAddress = "Surabaya";
 
-        try {
-          const mitraQuery = query(
-            collection(firestoreDb, "mitra_profiles"),
-            where("__name__", "==", p.mitraId)
-          );
-          const mitraSnap = await getDocs(mitraQuery);
-          if (!mitraSnap.empty) {
-            const md = mitraSnap.docs[0].data();
-            mitraName = md.orgName || md.org_name || md.nama_organisasi || mitraName;
-            mitraOrgType = md.orgType || md.org_type || md.tipe_organisasi || mitraOrgType;
-            mitraAddress = md.address || md.alamat || mitraAddress;
+          try {
+            const mitraQuery = query(
+              collection(firestoreDb, "mitra_profiles"),
+              where("__name__", "==", p.mitraId)
+            );
+            const mitraSnap = await getDocs(mitraQuery);
+            if (!mitraSnap.empty) {
+              const md = mitraSnap.docs[0].data();
+              mitraName = md.orgName || md.org_name || md.nama_organisasi || mitraName;
+              mitraOrgType = md.orgType || md.org_type || md.tipe_organisasi || mitraOrgType;
+              mitraAddress = md.address || md.alamat || mitraAddress;
+            }
+          } catch {
+            // silently ignore
           }
-        } catch {
-          // silently ignore
-        }
 
-        return {
-          ...p,
-          mitraName,
-          mitraOrgType,
-          mitraAddress,
-          neededCategoryNames: [],
-        };
-      })
-    );
-
-    let result = enriched.filter((p) => Boolean(p.coverImageUrl && p.coverImageUrl.trim() !== ""));
-    if (filter?.search) {
-      const q = filter.search.toLowerCase();
-      result = result.filter(
-        (p) =>
-          p.title.toLowerCase().includes(q) ||
-          p.mitraName.toLowerCase().includes(q)
+          return {
+            ...p,
+            mitraName,
+            mitraOrgType,
+            mitraAddress,
+            neededCategoryNames: [],
+          };
+        })
       );
-    }
 
-    return result;
+      let result = enriched.filter((p) => Boolean(p.coverImageUrl && p.coverImageUrl.trim() !== ""));
+      if (filter?.search) {
+        const q = filter.search.toLowerCase();
+        result = result.filter(
+          (p) =>
+            p.title.toLowerCase().includes(q) ||
+            p.mitraName.toLowerCase().includes(q)
+        );
+      }
+
+      if (result.length > 0) {
+        return result;
+      }
+    }
   } catch (e) {
     console.warn("[unified-repo] Firestore programs unavailable:", e);
+  }
+
+  // Fallback to local SQLite repo
+  try {
+    const { listActivePrograms } = await import("@/lib/repo");
+    return listActivePrograms(filter);
+  } catch (e) {
+    console.warn("[unified-repo] Local SQLite active programs error:", e);
     return [];
   }
 }
@@ -139,42 +151,68 @@ export async function getProgramByIdUnified(
 ): Promise<(Program & { mitra: MitraProfile }) | null> {
   try {
     const fbProgram = await getFirebaseProgramById(id);
-    if (!fbProgram) return null;
+    if (fbProgram) {
+      let mitra: MitraProfile = {
+        id: fbProgram.mitraId,
+        userId: "",
+        orgName: "Mitra DonasiKu",
+        orgType: "Organisasi Sosial",
+        description: "Mitra terverifikasi DonasiKu",
+        legalDocsUrl: null,
+        verified: true,
+        latitude: -7.25,
+        longitude: 112.75,
+        address: "Surabaya",
+        createdAt: new Date().toISOString(),
+      };
 
-    let mitra: MitraProfile = {
-      id: fbProgram.mitraId,
-      userId: "",
-      orgName: "Mitra DonasiKu",
-      orgType: "Organisasi Sosial",
-      description: "Mitra terverifikasi DonasiKu",
-      legalDocsUrl: null,
-      verified: true,
-      latitude: -7.25,
-      longitude: 112.75,
-      address: "Surabaya",
-      createdAt: new Date().toISOString(),
-    };
-
-    try {
-      const mitraQuery = query(
-        collection(firestoreDb, "mitra_profiles"),
-        where("__name__", "==", fbProgram.mitraId)
-      );
-      const mitraSnap = await getDocs(mitraQuery);
-      if (!mitraSnap.empty) {
-        const md = mitraSnap.docs[0].data();
-        mitra.orgName = md.orgName || md.org_name || md.nama_organisasi || mitra.orgName;
-        mitra.orgType = md.orgType || md.org_type || md.tipe_organisasi || mitra.orgType;
-        mitra.address = md.address || md.alamat || mitra.address;
-        mitra.description = md.description || md.deskripsi || mitra.description;
+      try {
+        const mitraQuery = query(
+          collection(firestoreDb, "mitra_profiles"),
+          where("__name__", "==", fbProgram.mitraId)
+        );
+        const mitraSnap = await getDocs(mitraQuery);
+        if (!mitraSnap.empty) {
+          const md = mitraSnap.docs[0].data();
+          mitra.orgName = md.orgName || md.org_name || md.nama_organisasi || mitra.orgName;
+          mitra.orgType = md.orgType || md.org_type || md.tipe_organisasi || mitra.orgType;
+          mitra.address = md.address || md.alamat || mitra.address;
+          mitra.description = md.description || md.deskripsi || mitra.description;
+        }
+      } catch {
+        // silently ignore
       }
-    } catch {
-      // silently ignore
-    }
 
-    return { ...fbProgram, mitra };
+      return { ...fbProgram, mitra };
+    }
   } catch (e) {
-    console.warn("[unified-repo] Firestore program by id unavailable:", e);
+    console.warn("[unified-repo] Firestore program by id error:", e);
+  }
+
+  // Fallback to local SQLite repo
+  try {
+    const { getProgramById, getMitraProfileById } = await import("@/lib/repo");
+    const program = getProgramById(id);
+    if (!program) return null;
+    const mitra = getMitraProfileById(program.mitraId);
+    return {
+      ...program,
+      mitra: mitra || {
+        id: program.mitraId,
+        userId: "",
+        orgName: "Mitra DonasiKu",
+        orgType: "Organisasi Sosial",
+        description: "Mitra terverifikasi DonasiKu",
+        legalDocsUrl: null,
+        verified: true,
+        latitude: -7.25,
+        longitude: 112.75,
+        address: "Surabaya",
+        createdAt: new Date().toISOString(),
+      },
+    };
+  } catch (e) {
+    console.warn("[unified-repo] Local SQLite getProgramById error:", e);
     return null;
   }
 }
